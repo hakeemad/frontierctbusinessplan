@@ -11,7 +11,16 @@ export async function GET() {
     console.log('Raw data from DB:', rawData)
     
     if (rawData) {
-      const parsedData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+      // Handle both new format (direct object) and old format (with ok/value wrapper)
+      let parsedData
+      if (typeof rawData === 'string') {
+        parsedData = JSON.parse(rawData)
+      } else if (rawData.ok && rawData.value) {
+        // Handle old Replit DB format
+        parsedData = typeof rawData.value === 'string' ? JSON.parse(rawData.value) : rawData.value
+      } else {
+        parsedData = rawData
+      }
       console.log('Parsed data:', parsedData)
       return NextResponse.json(parsedData)
     } else {
@@ -43,14 +52,15 @@ export async function POST(request: NextRequest) {
     const planData = await request.json()
     console.log('Received data:', planData)
     
+    // Handle both old format (logo, goalAreas, teamMembers) and new format (logoUrl, goals, measures, actions, team)
     const dataToSave = {
       vision: planData.vision || "",
       mission: planData.mission || "",
-      goals: planData.goals || [],
+      goals: planData.goals || planData.goalAreas || [],
       measures: planData.measures || [],
       actions: planData.actions || [],
-      team: planData.team || [],
-      logoUrl: planData.logoUrl || "",
+      team: planData.team || planData.teamMembers || [],
+      logoUrl: planData.logoUrl || planData.logo || "",
       lastUpdated: new Date().toISOString()
     }
     
