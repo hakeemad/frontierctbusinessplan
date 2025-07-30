@@ -1,6 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import db from '@replit/database'
+import { Client } from '@replit/database'
+
+// Create database client instance
+const db = new Client()
 
 export async function GET() {
   try {
