@@ -39,14 +39,14 @@ interface Milestone {
   notes?: string
   progressNotes?: { id: string; text: string; timestamp: string }[]
   deadline?: string
-  assignees?: string[] // Change from assignee to assignees array
+  assignees?: string[]
 }
 
 interface GoalArea {
   id: string
   title: string
   color: string
-  assignees?: string[] // Change from assignee to assignees array
+  assignees?: string[]
   strategies: string[]
   measures: Milestone[]
   rocks: Milestone[]
@@ -91,6 +91,7 @@ export default function BusinessPlanTemplate() {
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   const colors = [
     "bg-blue-500",
@@ -103,22 +104,39 @@ export default function BusinessPlanTemplate() {
     "bg-teal-500",
   ]
 
-  // Load plan data from API
+  // Load plan data from API on page load
   const loadPlanData = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/plan')
+      console.log('Loading plan data from /api/plan...')
+      const response = await fetch('/api/plan', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
       if (response.ok) {
         const data = await response.json()
-        setVision(data.vision || "")
-        setMission(data.mission || "")
-        setLogo(data.logo || null)
-        setGoalAreas(data.goalAreas || [])
-        setTeamMembers(data.teamMembers || [])
-        setSavedVersions(data.savedVersions || [])
+        console.log('Loaded plan data:', data)
+        
+        // Parse the data properly - it seems to be double-encoded
+        let parsedData = data
+        if (typeof data.value === 'string') {
+          parsedData = JSON.parse(data.value)
+        }
+        
+        setVision(parsedData.vision || "")
+        setMission(parsedData.mission || "")
+        setLogo(parsedData.logo || null)
+        setGoalAreas(parsedData.goalAreas || [])
+        setTeamMembers(parsedData.teamMembers || [])
+        setSavedVersions(parsedData.savedVersions || [])
+      } else {
+        console.error('Failed to load plan data:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error("Failed to load plan data:", error)
+      console.error("Error loading plan data:", error)
     } finally {
       setIsLoading(false)
     }
@@ -126,7 +144,12 @@ export default function BusinessPlanTemplate() {
 
   // Save data to API
   const saveToAPI = useCallback(async () => {
+    if (isSaving) return // Prevent concurrent saves
+    
     try {
+      setIsSaving(true)
+      console.log('Saving plan data to /api/plan...')
+      
       const planData = {
         vision,
         mission,
@@ -136,27 +159,41 @@ export default function BusinessPlanTemplate() {
         savedVersions,
       }
       
-      await fetch('/api/plan', {
+      console.log('Sending plan data:', planData)
+      
+      const response = await fetch('/api/plan', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(planData),
       })
+      
+      if (response.ok) {
+        console.log('Plan data saved successfully')
+      } else {
+        console.error('Failed to save plan data:', response.status, response.statusText)
+      }
     } catch (error) {
-      console.error("Failed to save plan data:", error)
+      console.error("Error saving plan data:", error)
+    } finally {
+      setIsSaving(false)
     }
-  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions])
+  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions, isSaving])
 
-  // Initialize data on mount
+  // Load data on component mount
   useEffect(() => {
     loadPlanData()
   }, [loadPlanData])
 
-  // Auto-save whenever any relevant state changes
+  // Auto-save whenever data changes (but not during initial load)
   useEffect(() => {
     if (!isLoading) {
-      saveToAPI()
+      const timeoutId = setTimeout(() => {
+        saveToAPI()
+      }, 500) // Debounce saves by 500ms
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [vision, mission, logo, goalAreas, teamMembers, savedVersions, isLoading, saveToAPI])
 
@@ -180,7 +217,7 @@ export default function BusinessPlanTemplate() {
       id: `area-${Date.now()}`,
       title: "New Goal Area",
       color: colors[goalAreas.length % colors.length],
-      assignees: [], // Initialize empty assignees array
+      assignees: [],
       strategies: [],
       measures: [],
       rocks: [],
@@ -431,7 +468,7 @@ export default function BusinessPlanTemplate() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading your business plan...</p>
+          <p className="text-lg text-gray-600">Loading shared business plan...</p>
         </div>
       </div>
     )
@@ -483,7 +520,6 @@ export default function BusinessPlanTemplate() {
             </div>
           )}
 
-          {/* Saved versions */}
           {/* Saved versions dropdown */}
           {savedVersions.length > 0 && (
             <div className="flex justify-center mb-6">
@@ -566,7 +602,7 @@ export default function BusinessPlanTemplate() {
           <div className="mb-6">
             {logo ? (
               <div className="flex items-center justify-center gap-4">
-                <img src={logo || "/placeholder.svg"} alt="Logo" className="h-16 object-contain" />
+                <img src={logo} alt="Logo" className="h-16 object-contain" />
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-2">
                   <Upload className="h-4 w-4" />
                   Change Logo
@@ -597,7 +633,10 @@ export default function BusinessPlanTemplate() {
             />
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">Business Plan Template</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">Shared Business Plan</h1>
+          <p className="text-sm text-gray-600 mb-4">
+            {isSaving ? "💾 Saving changes..." : "✅ All changes auto-saved"}
+          </p>
 
           {/* vision / mission */}
           <InlineEdit
@@ -720,7 +759,6 @@ export default function BusinessPlanTemplate() {
           </div>
         )}
 
-        {/* Saved versions */}
         {/* Saved versions dropdown */}
         {savedVersions.length > 0 && (
           <div className="text-center mb-6">
@@ -1104,7 +1142,6 @@ function GoalAreaCard({
   removeItem: (id: string, type: ListKey, index: number) => void
   toggle: (id: string, mid: string, type: "measures" | "rocks") => void
   updateNotes: (id: string, mid: string, type: "measures" | "rocks", notes: string) => void
-  onAssigneeUpdate?: (assignees: string[]) => void
   updateMilestoneAssignees: (id: string, mid: string, type: "measures" | "rocks", assignees: string[]) => void
   updateMilestoneText: (id: string, mid: string, type: "measures" | "rocks", newText: string) => void
   progress: number
