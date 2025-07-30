@@ -2,17 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Database from '@replit/database'
 
-// Create database instance
 const db = new Database()
 
 export async function GET() {
   try {
     console.log('GET /api/plan - Loading plan data...')
-    const rawData = await db.get('plan-data')
+    const rawData = await db.get('plan')
     console.log('Raw data from DB:', rawData)
     
     if (rawData) {
-      // Parse JSON if it's a string, otherwise return as-is
       const parsedData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
       console.log('Parsed data:', parsedData)
       return NextResponse.json(parsedData)
@@ -21,10 +19,11 @@ export async function GET() {
       const defaultData = {
         vision: "",
         mission: "",
-        logoUrl: "",
+        goals: [],
+        measures: [],
+        actions: [],
         team: [],
-        goalAreas: [],
-        savedVersions: [],
+        logoUrl: "",
         lastUpdated: new Date().toISOString()
       }
       return NextResponse.json(defaultData)
@@ -44,22 +43,21 @@ export async function POST(request: NextRequest) {
     const planData = await request.json()
     console.log('Received data:', planData)
     
-    // Ensure all required fields are present
     const dataToSave = {
       vision: planData.vision || "",
       mission: planData.mission || "",
-      logoUrl: planData.logoUrl || planData.logo || "", // Support both logoUrl and logo
-      team: planData.team || planData.teamMembers || [], // Support both team and teamMembers
-      goalAreas: planData.goalAreas || [],
-      savedVersions: planData.savedVersions || [],
+      goals: planData.goals || [],
+      measures: planData.measures || [],
+      actions: planData.actions || [],
+      team: planData.team || [],
+      logoUrl: planData.logoUrl || "",
       lastUpdated: new Date().toISOString()
     }
     
-    // Stringify the data before saving to ensure it's stored as JSON
     const stringifiedData = JSON.stringify(dataToSave)
     console.log('Stringified data to save:', stringifiedData)
     
-    const result = await db.set('plan-data', stringifiedData)
+    const result = await db.set('plan', stringifiedData)
     console.log('Save result:', result)
     
     return NextResponse.json({ success: true, data: dataToSave })
