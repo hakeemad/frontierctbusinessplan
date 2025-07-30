@@ -78,7 +78,8 @@ export default function BusinessPlanPage() {
         logoUrl,
       }
 
-      console.log('Saving plan data:', planData)
+      console.log('Saving plan data to /api/plan...')
+      console.log('Sending plan data:', planData)
 
       const response = await fetch('/api/plan', {
         method: 'POST',
