@@ -21,9 +21,9 @@ export async function GET() {
       const defaultData = {
         vision: "",
         mission: "",
-        logo: null,
+        logoUrl: "",
+        team: [],
         goalAreas: [],
-        teamMembers: [],
         savedVersions: [],
         lastUpdated: new Date().toISOString()
       }
@@ -44,8 +44,14 @@ export async function POST(request: NextRequest) {
     const planData = await request.json()
     console.log('Received data:', planData)
     
+    // Ensure all required fields are present
     const dataToSave = {
-      ...planData,
+      vision: planData.vision || "",
+      mission: planData.mission || "",
+      logoUrl: planData.logoUrl || planData.logo || "", // Support both logoUrl and logo
+      team: planData.team || planData.teamMembers || [], // Support both team and teamMembers
+      goalAreas: planData.goalAreas || [],
+      savedVersions: planData.savedVersions || [],
       lastUpdated: new Date().toISOString()
     }
     
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
     const result = await db.set('plan-data', stringifiedData)
     console.log('Save result:', result)
     
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, data: dataToSave })
   } catch (error) {
     console.error('POST /api/plan - Error saving plan data:', error)
     return NextResponse.json({ 

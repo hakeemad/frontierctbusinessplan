@@ -120,18 +120,12 @@ export default function BusinessPlanTemplate() {
         const data = await response.json()
         console.log('Loaded plan data:', data)
         
-        // Parse the data properly - it seems to be double-encoded
-        let parsedData = data
-        if (typeof data.value === 'string') {
-          parsedData = JSON.parse(data.value)
-        }
-        
-        setVision(parsedData.vision || "")
-        setMission(parsedData.mission || "")
-        setLogo(parsedData.logo || null)
-        setGoalAreas(parsedData.goalAreas || [])
-        setTeamMembers(parsedData.teamMembers || [])
-        setSavedVersions(parsedData.savedVersions || [])
+        setVision(data.vision || "")
+        setMission(data.mission || "")
+        setLogo(data.logoUrl || data.logo || null) // Support both logoUrl and logo
+        setGoalAreas(data.goalAreas || [])
+        setTeamMembers(data.team || data.teamMembers || []) // Support both team and teamMembers
+        setSavedVersions(data.savedVersions || [])
       } else {
         console.error('Failed to load plan data:', response.status, response.statusText)
       }
@@ -142,7 +136,7 @@ export default function BusinessPlanTemplate() {
     }
   }, [])
 
-  // Save data to API
+  // Save data to API with debouncing to prevent excessive saves
   const saveToAPI = useCallback(async () => {
     if (isSaving) return // Prevent concurrent saves
     
@@ -153,9 +147,9 @@ export default function BusinessPlanTemplate() {
       const planData = {
         vision,
         mission,
-        logo,
+        logoUrl: logo, // Use logoUrl as the field name
+        team: teamMembers, // Use team as the field name
         goalAreas,
-        teamMembers,
         savedVersions,
       }
       
@@ -170,7 +164,8 @@ export default function BusinessPlanTemplate() {
       })
       
       if (response.ok) {
-        console.log('Plan data saved successfully')
+        const result = await response.json()
+        console.log('Plan data saved successfully', result)
       } else {
         console.error('Failed to save plan data:', response.status, response.statusText)
       }
@@ -180,6 +175,11 @@ export default function BusinessPlanTemplate() {
       setIsSaving(false)
     }
   }, [vision, mission, logo, goalAreas, teamMembers, savedVersions, isSaving])
+
+  // Manual save function for explicit saves
+  const handleSave = useCallback(async () => {
+    await saveToAPI()
+  }, [saveToAPI])
 
   // Load data on component mount
   useEffect(() => {
@@ -191,7 +191,7 @@ export default function BusinessPlanTemplate() {
     if (!isLoading) {
       const timeoutId = setTimeout(() => {
         saveToAPI()
-      }, 500) // Debounce saves by 500ms
+      }, 2000) // Debounce saves by 2 seconds to reduce excessive API calls
       
       return () => clearTimeout(timeoutId)
     }
