@@ -1,8 +1,8 @@
+
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
-import { Database } from "@replit/database"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
@@ -89,8 +89,8 @@ export default function BusinessPlanTemplate() {
   // Drag and drop state
   const [draggedArea, setDraggedArea] = useState<string | null>(null)
 
-  // Database
-  const db = useRef<Database | null>(null)
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true)
 
   const colors = [
     "bg-blue-500",
@@ -103,34 +103,29 @@ export default function BusinessPlanTemplate() {
     "bg-teal-500",
   ]
 
-  // Initialize database and load shared plan data
-  useEffect(() => {
-    const initDb = async () => {
-      try {
-        db.current = new Database()
-        const planData = await db.current.get("plan-data")
-        
-        if (planData) {
-          const data = JSON.parse(planData)
-          setVision(data.vision || "")
-          setMission(data.mission || "")
-          setLogo(data.logo || null)
-          setGoalAreas(data.goalAreas || [])
-          setTeamMembers(data.teamMembers || [])
-          setSavedVersions(data.savedVersions || [])
-        }
-      } catch (error) {
-        console.error("Failed to load plan data:", error)
+  // Load plan data from API
+  const loadPlanData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/plan')
+      if (response.ok) {
+        const data = await response.json()
+        setVision(data.vision || "")
+        setMission(data.mission || "")
+        setLogo(data.logo || null)
+        setGoalAreas(data.goalAreas || [])
+        setTeamMembers(data.teamMembers || [])
+        setSavedVersions(data.savedVersions || [])
       }
+    } catch (error) {
+      console.error("Failed to load plan data:", error)
+    } finally {
+      setIsLoading(false)
     }
-    
-    initDb()
   }, [])
 
-  // Save data to database whenever state changes
-  const saveToDatabase = async () => {
-    if (!db.current) return
-    
+  // Save data to API
+  const saveToAPI = useCallback(async () => {
     try {
       const planData = {
         vision,
@@ -139,19 +134,31 @@ export default function BusinessPlanTemplate() {
         goalAreas,
         teamMembers,
         savedVersions,
-        lastUpdated: new Date().toISOString()
       }
       
-      await db.current.set("plan-data", JSON.stringify(planData))
+      await fetch('/api/plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(planData),
+      })
     } catch (error) {
       console.error("Failed to save plan data:", error)
     }
-  }
+  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions])
+
+  // Initialize data on mount
+  useEffect(() => {
+    loadPlanData()
+  }, [loadPlanData])
 
   // Auto-save whenever any relevant state changes
   useEffect(() => {
-    saveToDatabase()
-  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions])
+    if (!isLoading) {
+      saveToAPI()
+    }
+  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions, isLoading, saveToAPI])
 
   /* -------------------------------------------------- team helpers */
   const addTeamMember = () => {
@@ -417,6 +424,17 @@ export default function BusinessPlanTemplate() {
 
   const handleDragEnd = () => {
     setDraggedArea(null)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading your business plan...</p>
+        </div>
+      </div>
+    )
   }
 
   /* -------------------------------------------------- presentation */
