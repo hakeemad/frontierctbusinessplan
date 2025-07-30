@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
+import { Database } from "@replit/database"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
@@ -88,6 +89,9 @@ export default function BusinessPlanTemplate() {
   // Drag and drop state
   const [draggedArea, setDraggedArea] = useState<string | null>(null)
 
+  // Database
+  const db = useRef<Database | null>(null)
+
   const colors = [
     "bg-blue-500",
     "bg-green-500",
@@ -99,42 +103,61 @@ export default function BusinessPlanTemplate() {
     "bg-teal-500",
   ]
 
-  // Load saved versions from localStorage on component mount
+  // Initialize database and load shared plan data
   useEffect(() => {
-    const saved = localStorage.getItem("business-plan-versions")
-    if (saved) {
-      setSavedVersions(JSON.parse(saved))
+    const initDb = async () => {
+      try {
+        db.current = new Database()
+        const planData = await db.current.get("plan-data")
+        
+        if (planData) {
+          const data = JSON.parse(planData)
+          setVision(data.vision || "")
+          setMission(data.mission || "")
+          setLogo(data.logo || null)
+          setGoalAreas(data.goalAreas || [])
+          setTeamMembers(data.teamMembers || [])
+          setSavedVersions(data.savedVersions || [])
+        }
+      } catch (error) {
+        console.error("Failed to load plan data:", error)
+      }
     }
-
-    // Load team members from localStorage
-    const savedTeam = localStorage.getItem("business-plan-team")
-    if (savedTeam) {
-      setTeamMembers(JSON.parse(savedTeam))
-    }
-
-    // Load vision, mission, and logo from localStorage
-    const savedVision = localStorage.getItem("business-plan-vision")
-    if (savedVision) {
-      setVision(savedVision)
-    }
-
-    const savedMission = localStorage.getItem("business-plan-mission")
-    if (savedMission) {
-      setMission(savedMission)
-    }
-
-    const savedLogo = localStorage.getItem("business-plan-logo")
-    if (savedLogo) {
-      setLogo(savedLogo)
-    }
+    
+    initDb()
   }, [])
+
+  // Save data to database whenever state changes
+  const saveToDatabase = async () => {
+    if (!db.current) return
+    
+    try {
+      const planData = {
+        vision,
+        mission,
+        logo,
+        goalAreas,
+        teamMembers,
+        savedVersions,
+        lastUpdated: new Date().toISOString()
+      }
+      
+      await db.current.set("plan-data", JSON.stringify(planData))
+    } catch (error) {
+      console.error("Failed to save plan data:", error)
+    }
+  }
+
+  // Auto-save whenever any relevant state changes
+  useEffect(() => {
+    saveToDatabase()
+  }, [vision, mission, logo, goalAreas, teamMembers, savedVersions])
 
   /* -------------------------------------------------- team helpers */
   const addTeamMember = () => {
     if (!newTeamMember.trim()) return
     const updatedTeam = [...teamMembers, newTeamMember.trim()]
     setTeamMembers(updatedTeam)
-    localStorage.setItem("business-plan-team", JSON.stringify(updatedTeam))
     setNewTeamMember("")
     setShowTeamInput(false)
   }
@@ -142,7 +165,6 @@ export default function BusinessPlanTemplate() {
   const removeTeamMember = (index: number) => {
     const updatedTeam = teamMembers.filter((_, i) => i !== index)
     setTeamMembers(updatedTeam)
-    localStorage.setItem("business-plan-team", JSON.stringify(updatedTeam))
   }
 
   /* -------------------------------------------------- helpers */
@@ -293,7 +315,6 @@ export default function BusinessPlanTemplate() {
 
     const updatedVersions = [...savedVersions, newSave]
     setSavedVersions(updatedVersions)
-    localStorage.setItem("business-plan-versions", JSON.stringify(updatedVersions))
     setSaveName("")
     setShowSaveInput(false)
   }
@@ -305,14 +326,12 @@ export default function BusinessPlanTemplate() {
     setGoalAreas(saveData.goalAreas)
     if (saveData.teamMembers) {
       setTeamMembers(saveData.teamMembers)
-      localStorage.setItem("business-plan-team", JSON.stringify(saveData.teamMembers))
     }
   }
 
   const deleteSave = (saveId: string) => {
     const updatedVersions = savedVersions.filter((save) => save.id !== saveId)
     setSavedVersions(updatedVersions)
-    localStorage.setItem("business-plan-versions", JSON.stringify(updatedVersions))
   }
 
   const addProgressNote = (areaId: string, milestoneId: string, type: "measures" | "rocks", noteText: string) => {
@@ -510,17 +529,14 @@ export default function BusinessPlanTemplate() {
   /* -------------------------------------------------- edit mode */
   const handleVisionChange = (newVision: string) => {
     setVision(newVision)
-    localStorage.setItem("business-plan-vision", newVision)
   }
 
   const handleMissionChange = (newMission: string) => {
     setMission(newMission)
-    localStorage.setItem("business-plan-mission", newMission)
   }
 
   const handleLogoChange = (newLogo: string) => {
     setLogo(newLogo)
-    localStorage.setItem("business-plan-logo", newLogo)
   }
 
   return (
