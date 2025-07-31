@@ -275,6 +275,43 @@ export default function Page() {
 
   const goalColors = ['bg-blue-50 border-blue-200', 'bg-green-50 border-green-200', 'bg-purple-50 border-purple-200', 'bg-orange-50 border-orange-200'];
 
+  // Progress Summary Calculations
+  const getProgressSummary = () => {
+    const allActions = planData.goals.flatMap(goal => goal.actions || []);
+    const allMeasures = planData.goals.flatMap(goal => goal.measures || []);
+    
+    const completedActions = allActions.filter(action => action.archived).length;
+    const completedMeasures = allMeasures.filter(measure => measure.archived).length;
+    
+    const actionsCompletionRate = allActions.length > 0 ? Math.round((completedActions / allActions.length) * 100) : 0;
+    const measuresCompletionRate = allMeasures.length > 0 ? Math.round((completedMeasures / allMeasures.length) * 100) : 0;
+    
+    const goalsWithAllActionsComplete = planData.goals.filter(goal => {
+      const actions = goal.actions || [];
+      return actions.length > 0 && actions.every(action => action.archived);
+    }).length;
+    
+    const overdueItems = [...allActions, ...allMeasures].filter(item => 
+      !item.archived && item.dueDate && isOverdue(item.dueDate)
+    ).length;
+    
+    const upcomingItems = [...allActions, ...allMeasures]
+      .filter(item => !item.archived && item.dueDate && !isOverdue(item.dueDate))
+      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+    
+    const nextDueDate = upcomingItems.length > 0 ? upcomingItems[0].dueDate : null;
+    
+    return {
+      actionsCompletionRate,
+      measuresCompletionRate,
+      goalsWithAllActionsComplete,
+      overdueItems,
+      nextDueDate
+    };
+  };
+
+  const progressSummary = getProgressSummary();
+
   // Helper functions for progress view
   const isOverdue = (dueDate: string | undefined) => {
     if (!dueDate) return false;
@@ -334,6 +371,40 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Progress Summary Bar */}
+        <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4 sticky top-4 z-10">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="bg-green-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
+              <div className="text-green-700">Actions Complete</div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
+              <div className="text-blue-700">Measures Complete</div>
+            </div>
+            
+            <div className="bg-purple-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
+              <div className="text-purple-700">Goals Fully Complete</div>
+            </div>
+            
+            <div className="bg-red-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
+              <div className="text-red-700">Overdue Items</div>
+            </div>
+            
+            <div className="bg-yellow-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-yellow-600">⏳</div>
+              <div className="text-yellow-700">Next Due</div>
+              <div className="text-xs mt-1 font-medium">
+                {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-sm p-6">
             {/* Header with logo and title in horizontal row */}
             <div className="flex items-center gap-4 mb-4">
@@ -584,13 +655,13 @@ export default function Page() {
                           key={i}
                           type="text"
                           value={strategy}
-                          onChange={e => updateGoal(goalIndex, 'strategies', (goal.strategies || []).map((s, si) => si === i ? e.target.value : s))}
+                          onChange={e => updateGoal(goalIndex, 'strategies', Array.isArray(goal.strategies) ? goal.strategies.map((s, si) => si === i ? e.target.value : s) : [e.target.value])}
                           className="w-full text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Strategy"
                         />
                       ))}
                       <button
-                        onClick={() => updateGoal(goalIndex, 'strategies', [...(goal.strategies || []), ''])}
+                        onClick={() => updateGoal(goalIndex, 'strategies', [...(Array.isArray(goal.strategies) ? goal.strategies : []), ''])}
                         className="text-xs text-blue-600 hover:text-blue-800"
                       >
                         + Add Strategy
@@ -598,7 +669,7 @@ export default function Page() {
                     </div>
                   ) : (
                     <ul className="text-sm text-gray-600 space-y-1">
-                      {(goal.strategies || []).map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
+                      {Array.isArray(goal.strategies) ? goal.strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>) : []}
                     </ul>
                   )}
                 </div>
