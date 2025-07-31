@@ -21,6 +21,7 @@ export default function RootLayout({
         <title>Frontier App</title>
         <meta name="description" content="Strategic Business Planning Application" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
       </head>
       <body>{children}</body>
     </html>
