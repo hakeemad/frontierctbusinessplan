@@ -34,7 +34,7 @@ export default function Page() {
     teamMembers: []
   });
   const [status, setStatus] = useState('');
-  const [mode, setMode] = useState<'edit' | 'presentation'>('edit');
+  const [mode, setMode] = useState<'edit' | 'presentation' | 'progress'>('edit');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -275,6 +275,62 @@ export default function Page() {
 
   const goalColors = ['bg-blue-50 border-blue-200', 'bg-green-50 border-green-200', 'bg-purple-50 border-purple-200', 'bg-orange-50 border-orange-200'];
 
+  // Helper functions for progress view
+  const isOverdue = (dueDate: string | undefined) => {
+    if (!dueDate) return false;
+    const today = new Date();
+    const due = new Date(dueDate);
+    return due < today;
+  };
+
+  const isDueThisWeek = (dueDate: string | undefined) => {
+    if (!dueDate) return false;
+    const today = new Date();
+    const due = new Date(dueDate);
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return due >= today && due <= nextWeek;
+  };
+
+  const getProgressItems = () => {
+    const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction, goalName: string }> } = {};
+    
+    planData.teamMembers.forEach(member => {
+      if (member.trim()) {
+        items[member] = [];
+      }
+    });
+
+    planData.goals.forEach(goal => {
+      goal.actions.forEach(action => {
+        if (action.assignee && action.assignee.trim() && items[action.assignee]) {
+          items[action.assignee].push({ type: 'action', item: action, goalName: goal.name || 'Untitled Goal' });
+        }
+      });
+      
+      goal.measures.forEach(measure => {
+        if (measure.assignee && measure.assignee.trim() && items[measure.assignee]) {
+          items[measure.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
+        }
+      });
+    });
+
+    return items;
+  };
+
+  const getStatusIcon = (item: MeasureAction) => {
+    if (item.archived) return '✅';
+    if (isOverdue(item.dueDate)) return '⚠️';
+    if (isDueThisWeek(item.dueDate)) return '⏳';
+    return '📋';
+  };
+
+  const getStatusColor = (item: MeasureAction) => {
+    if (item.archived) return 'text-green-600 bg-green-50';
+    if (isOverdue(item.dueDate)) return 'text-red-600 bg-red-50';
+    if (isDueThisWeek(item.dueDate)) return 'text-yellow-600 bg-yellow-50';
+    return 'text-gray-600 bg-gray-50';
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -297,10 +353,24 @@ export default function Page() {
 
             <div className="flex gap-4 mb-6">
               <button
-                onClick={() => setMode(mode === 'edit' ? 'presentation' : 'edit')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                onClick={() => setMode('edit')}
+                className={`px-4 py-2 rounded-lg ${mode === 'edit' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
               >
-                {mode === 'edit' ? '📊 Presentation Mode' : '✏️ Edit Mode'}
+                ✏️ Edit Mode
+              </button>
+              
+              <button
+                onClick={() => setMode('presentation')}
+                className={`px-4 py-2 rounded-lg ${mode === 'presentation' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                📊 Presentation Mode
+              </button>
+              
+              <button
+                onClick={() => setMode('progress')}
+                className={`px-4 py-2 rounded-lg ${mode === 'progress' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                📈 Weekly Progress
               </button>
 
               <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
@@ -387,8 +457,75 @@ export default function Page() {
             )}
           </div>
 
-        <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {planData.goals.map((goal, goalIndex) => (
+        {mode === 'progress' ? (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">📈 Weekly Progress by Team Member</h2>
+            {Object.entries(getProgressItems()).map(([memberName, items]) => (
+              <div key={memberName} className="bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  👤 {memberName}
+                  <span className="text-sm font-normal text-gray-500">({items.length} items)</span>
+                </h3>
+                
+                {items.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No assigned items</p>
+                ) : (
+                  <div className="space-y-3">
+                    {items.map((entry, index) => (
+                      <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item)}`}>
+                        <span className="text-xl">{getStatusIcon(entry.item)}</span>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium uppercase tracking-wide opacity-75">
+                              {entry.type}
+                            </span>
+                            <span className="text-xs text-gray-600">from "{entry.goalName}"</span>
+                          </div>
+                          
+                          <p className={`text-sm ${entry.item.archived ? 'line-through opacity-60' : ''}`}>
+                            {entry.item.text || 'Untitled item'}
+                          </p>
+                          
+                          {entry.item.dueDate && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs bg-white/50 px-2 py-1 rounded">
+                                📅 Due: {entry.item.dueDate}
+                              </span>
+                              {isOverdue(entry.item.dueDate) && !entry.item.archived && (
+                                <span className="text-xs text-red-600 font-medium">OVERDUE</span>
+                              )}
+                              {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
+                                <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-right">
+                          {entry.item.archived ? (
+                            <span className="text-xs text-green-600 font-medium">COMPLETED</span>
+                          ) : (
+                            <span className="text-xs text-gray-500">In Progress</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {planData.teamMembers.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <p className="text-lg mb-2">No team members found</p>
+                <p className="text-sm">Add team members in Edit Mode to see their progress here.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {planData.goals.map((goal, goalIndex) => (
             <div
               key={goalIndex}
               draggable={mode === 'edit'}
@@ -608,7 +745,8 @@ export default function Page() {
               </button>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );
