@@ -14,7 +14,7 @@ interface Goal {
   strategies: string[];
   measures: MeasureAction[];
   actions: MeasureAction[];
-  assignees: string[];
+  sponsor: string;
 }
 
 interface PlanData {
@@ -64,7 +64,7 @@ export default function Page() {
               assignee: a.assignee || undefined,
               archived: Boolean(a.archived)
             })) : [],
-            assignees: Array.isArray(goal.assignees) ? goal.assignees : (Array.isArray(goal.assignedTeam) ? goal.assignedTeam : [])
+            sponsor: goal.sponsor || ''
           }));
 
           setPlanData({
@@ -159,7 +159,7 @@ export default function Page() {
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
           measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
           actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
-          assignees: values[4] ? values[4].split(';').map(t => t.trim()).filter(Boolean) : []
+          sponsor: values[4] ? values[4].trim() : ''
         };
 
         newGoals.push(goal);
@@ -212,7 +212,7 @@ export default function Page() {
         strategies: [],
         measures: [],
         actions: [],
-        assignees: []
+        sponsor: ''
       }]
     }));
   };
@@ -567,33 +567,26 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">👥 Goal Assignees</h4>
+                  <h4 className="font-medium text-gray-700 mb-2">🎯 Goal Sponsor</h4>
                   {mode === 'edit' ? (
-                    <div className="space-y-2">
-                      <select
-                        multiple
-                        value={goal.assignees}
-                        onChange={e => {
-                          const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
-                          updateGoal(goalIndex, 'assignees', selectedValues);
-                        }}
-                        className="w-full text-sm border border-gray-200 rounded px-2 py-1 min-h-[60px]"
-                      >
-                        {planData.teamMembers.filter(Boolean).map((member, i) => (
-                          <option key={i} value={member}>{member}</option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500">Hold Ctrl/Cmd to select multiple assignees</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {(goal.assignees || []).map((member, i) => member && (
-                        <span key={i} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          👤 {member}
-                        </span>
+                    <select
+                      value={goal.sponsor}
+                      onChange={e => updateGoal(goalIndex, 'sponsor', e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded px-2 py-1"
+                    >
+                      <option value="">Select sponsor</option>
+                      {planData.teamMembers.filter(Boolean).map((member, i) => (
+                        <option key={i} value={member}>{member}</option>
                       ))}
-                      {(!goal.assignees || goal.assignees.length === 0) && (
-                        <span className="text-xs text-gray-400">No assignees</span>
+                    </select>
+                  ) : (
+                    <div>
+                      {goal.sponsor ? (
+                        <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                          🎯 {goal.sponsor}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">No sponsor assigned</span>
                       )}
                     </div>
                   )}
