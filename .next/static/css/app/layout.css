@@ -885,6 +885,9 @@ video {
 .min-h-0 {
   min-height: 0px;
 }
+.min-h-\[60px\] {
+  min-height: 60px;
+}
 .min-h-\[80px\] {
   min-height: 80px;
 }
@@ -1617,6 +1620,10 @@ video {
 .text-gray-400 {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity, 1));
+}
+.text-gray-500 {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
 }
 .text-gray-600 {
   --tw-text-opacity: 1;
