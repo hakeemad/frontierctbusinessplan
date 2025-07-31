@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -128,7 +127,7 @@ export default function Page() {
       setStatus('Saving snapshot...');
       const timestamp = new Date().toISOString();
       const key = `plan_version_${timestamp}`;
-      
+
       const snapshotData = {
         key,
         timestamp,
@@ -351,28 +350,28 @@ export default function Page() {
   const getProgressSummary = () => {
     const allActions = planData.goals.flatMap(goal => goal.actions || []);
     const allMeasures = planData.goals.flatMap(goal => goal.measures || []);
-    
+
     const completedActions = allActions.filter(action => action.archived).length;
     const completedMeasures = allMeasures.filter(measure => measure.archived).length;
-    
+
     const actionsCompletionRate = allActions.length > 0 ? Math.round((completedActions / allActions.length) * 100) : 0;
     const measuresCompletionRate = allMeasures.length > 0 ? Math.round((completedMeasures / allMeasures.length) * 100) : 0;
-    
+
     const goalsWithAllActionsComplete = planData.goals.filter(goal => {
       const actions = goal.actions || [];
       return actions.length > 0 && actions.every(action => action.archived);
     }).length;
-    
+
     const overdueItems = [...allActions, ...allMeasures].filter(item => 
       !item.archived && item.dueDate && isOverdue(item.dueDate)
     ).length;
-    
+
     const upcomingItems = [...allActions, ...allMeasures]
       .filter(item => !item.archived && item.dueDate && !isOverdue(item.dueDate))
       .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
-    
+
     const nextDueDate = upcomingItems.length > 0 ? upcomingItems[0].dueDate : null;
-    
+
     return {
       actionsCompletionRate,
       measuresCompletionRate,
@@ -402,7 +401,7 @@ export default function Page() {
 
   const getProgressItems = () => {
     const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction, goalName: string }> } = {};
-    
+
     planData.teamMembers.forEach(member => {
       if (member.trim()) {
         items[member] = [];
@@ -415,10 +414,10 @@ export default function Page() {
           items[action.assignee].push({ type: 'action', item: action, goalName: goal.name || 'Untitled Goal' });
         }
       });
-      
+
       goal.measures.forEach(measure => {
         if (measure.assignee && measure.assignee.trim() && items[measure.assignee]) {
-          items[measure.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
+          items[action.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
         }
       });
     });
@@ -478,6 +477,72 @@ export default function Page() {
   };
 
   const filteredGoals = getFilteredGoals();
+
+  // Function to send weekly digest
+  const handleSendDigest = () => {
+    // Implement the logic to generate and display the digest here
+    // For now, let's just log a message to the console
+    console.log('Sending Weekly Digest...');
+
+    // Prepare the digest content
+    let digestContent = "Weekly Progress Digest:\n\n";
+
+    for (const member of planData.teamMembers) {
+        digestContent += `Team Member: ${member}\n`;
+
+        // Find all actions and measures assigned to this member
+        const memberItems = Object.entries(getProgressItems())
+            .filter(([memberName, items]) => memberName === member)
+            .flatMap(([, items]) => items);
+
+        if (memberItems.length === 0) {
+            digestContent += "No assigned items.\n\n";
+            continue;
+        }
+
+        // Group items by status
+        const completed = memberItems.filter(item => item.item.archived);
+        const overdue = memberItems.filter(item => !item.item.archived && item.item.dueDate && isOverdue(item.item.dueDate));
+        const dueSoon = memberItems.filter(item => !item.item.archived && item.item.dueDate && isDueThisWeek(item.item.dueDate));
+
+        // Add items to the digest content
+        digestContent += "\n✅ Completed This Week:\n";
+        if (completed.length > 0) {
+            for (const item of completed) {
+                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
+            }
+        } else {
+            digestContent += "None\n";
+        }
+
+        digestContent += "\n⚠️ Overdue:\n";
+        if (overdue.length > 0) {
+            for (const item of overdue) {
+                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
+            }
+        } else {
+            digestContent += "None\n";
+        }
+
+        digestContent += "\n⏳ Due in the Next 7 Days:\n";
+        if (dueSoon.length > 0) {
+            for (const item of dueSoon) {
+                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
+            }
+        } else {
+            digestContent += "None\n";
+        }
+
+        digestContent += "\n";
+    }
+
+    // Display the digest in an in-app modal (for now, using alert)
+    alert(digestContent);
+
+    // Optional: Console log or downloadable HTML
+    console.log(digestContent);
+    // You can add code here to generate and download an HTML file
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 p-4">
@@ -542,22 +607,22 @@ export default function Page() {
                       <div className="text-xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
                       <div className="text-green-700 text-xs">Actions Complete</div>
                     </div>
-                    
+
                     <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
                       <div className="text-xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
                       <div className="text-blue-700 text-xs">Measures Complete</div>
                     </div>
-                    
+
                     <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
                       <div className="text-xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
                       <div className="text-purple-700 text-xs">Goals Fully Complete</div>
                     </div>
-                    
+
                     <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
                       <div className="text-xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
                       <div className="text-red-700 text-xs">Overdue Items</div>
                     </div>
-                    
+
                     <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
                       <div className="text-lg font-bold text-yellow-600">⏳</div>
                       <div className="text-yellow-700 text-xs">Next Due</div>
@@ -576,7 +641,7 @@ export default function Page() {
                       <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                     </label>
                   )}
-                  
+
                   <div className="flex gap-2 items-center">
                     <input
                       type="text"
@@ -589,12 +654,19 @@ export default function Page() {
                       📸 Save Snapshot
                     </button>
                   </div>
-                  
+
                   <button 
                     onClick={() => setShowSnapshots(!showSnapshots)} 
                     className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                   >
                     📋 View Snapshots
+                  </button>
+
+                  <button 
+                    onClick={handleSendDigest}
+                    className="px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  >
+                    📧 Send Digest
                   </button>
                 </div>
               </div>
@@ -631,22 +703,22 @@ export default function Page() {
                   <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
                   <div className="text-green-700">Actions Complete</div>
                 </div>
-                
+
                 <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
                   <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
                   <div className="text-blue-700">Measures Complete</div>
                 </div>
-                
+
                 <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
                   <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
                   <div className="text-purple-700">Goals Fully Complete</div>
                 </div>
-                
+
                 <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
                   <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
                   <div className="text-red-700">Overdue Items</div>
                 </div>
-                
+
                 <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
                   <div className="text-lg font-bold text-yellow-600">⏳</div>
                   <div className="text-yellow-700">Next Due</div>
@@ -667,14 +739,14 @@ export default function Page() {
               >
                 ✏️ Edit Mode
               </button>
-              
+
               <button
                 onClick={() => setMode('presentation')}
                 className={`px-4 py-2 rounded-lg ${mode === 'presentation' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
               >
                 📊 Presentation Mode
               </button>
-              
+
               <button
                 onClick={() => setMode('progress')}
                 className={`px-4 py-2 rounded-lg ${mode === 'progress' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
@@ -707,6 +779,12 @@ export default function Page() {
                     >
                       📋 View Snapshots
                     </button>
+                    <button 
+                    onClick={handleSendDigest}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  >
+                    📧 Send Digest
+                  </button>
                   </div>
 
                   {isAdmin && (
@@ -827,7 +905,7 @@ export default function Page() {
                   👤 {memberName}
                   <span className="text-sm font-normal text-gray-500">({items.length} items)</span>
                 </h3>
-                
+
                 {items.length === 0 ? (
                   <p className="text-gray-500 text-sm">No assigned items</p>
                 ) : (
@@ -835,7 +913,7 @@ export default function Page() {
                     {items.map((entry, index) => (
                       <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item)}`}>
                         <span className="text-xl">{getStatusIcon(entry.item)}</span>
-                        
+
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs font-medium uppercase tracking-wide opacity-75">
@@ -843,11 +921,11 @@ export default function Page() {
                             </span>
                             <span className="text-xs text-gray-600">from "{entry.goalName}"</span>
                           </div>
-                          
+
                           <p className={`text-sm ${entry.item.archived ? 'line-through opacity-60' : ''}`}>
                             {entry.item.text || 'Untitled item'}
                           </p>
-                          
+
                           {entry.item.dueDate && (
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs bg-white/50 px-2 py-1 rounded">
@@ -862,7 +940,7 @@ export default function Page() {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="text-right">
                           {entry.item.archived ? (
                             <span className="text-xs text-green-600 font-medium">COMPLETED</span>
@@ -876,7 +954,7 @@ export default function Page() {
                 )}
               </div>
             ))}
-            
+
             {planData.teamMembers.length === 0 && (
               <div className="text-center py-12 text-gray-500">
                 <p className="text-lg mb-2">No team members found</p>
@@ -890,7 +968,7 @@ export default function Page() {
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex flex-wrap gap-4 items-center">
                 <h3 className="text-sm font-medium text-gray-700">🔍 Filters:</h3>
-                
+
                 {/* Assignee Filter */}
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-gray-600">Assignee:</label>
@@ -1150,7 +1228,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                
+
               </div>
             </div>
           ))}
