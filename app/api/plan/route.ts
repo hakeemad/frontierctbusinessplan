@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import Database from '@replit/database'
 
@@ -9,7 +8,7 @@ export async function GET() {
     console.log('GET /api/plan - Loading plan data...')
     const rawData = await db.get('plan')
     console.log('Raw data from DB:', rawData)
-    
+
     if (rawData) {
       // Handle both new format (direct object) and old format (with ok/value wrapper)
       let parsedData
@@ -21,7 +20,7 @@ export async function GET() {
       } else {
         parsedData = rawData
       }
-      
+
       // Migrate old format to new format if needed
       if (parsedData.goals && Array.isArray(parsedData.goals)) {
         parsedData.goals = parsedData.goals.map((goal: any) => {
@@ -50,7 +49,7 @@ export async function GET() {
           return goal
         })
       }
-      
+
       console.log('Parsed data:', parsedData)
       return NextResponse.json(parsedData)
     } else {
@@ -79,42 +78,58 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/plan - Saving plan data...')
     const planData = await request.json()
     console.log('Received data:', planData)
-    
+
     // Ensure data structure is correct
     const dataToSave = {
       logoUrl: planData.logoUrl || "",
       vision: planData.vision || "",
       mission: planData.mission || "",
-      goals: planData.goals || [],
+      goals: (planData.goals || []).map((goal: any) => {
+          // Handle legacy data format conversion
+          if (goal.assignedTeam && !goal.sponsor) {
+            goal.sponsor = Array.isArray(goal.assignedTeam) && goal.assignedTeam.length > 0 ? goal.assignedTeam[0] : ""
+            delete goal.assignedTeam
+          }
+          if (goal.assignees && !goal.sponsor) {
+            goal.sponsor = Array.isArray(goal.assignees) && goal.assignees.length > 0 ? goal.assignees[0] : ""
+            delete goal.assignees
+          }
+          if (!goal.sponsor) {
+            goal.sponsor = ""
+          }
+
+          // Ensure measures and actions are properly structured
+          goal.measures = Array.isArray(goal.measures) ? goal.measures.map((m: any) => ({
+            text: m.text || '',
+            dueDate: m.dueDate || undefined,
+            assignee: m.assignee || undefined,
+            archived: Boolean(m.archived)
+          })) : []
+
+          goal.actions = Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
+            text: a.text || '',
+            dueDate: m.dueDate || undefined,
+            assignee: m.assignee || undefined,
+            archived: Boolean(a.archived)
+          })) : []
+
+          goal.strategies = Array.isArray(goal.strategies) ? goal.strategies : []
+
+          return goal
+        }),
       teamMembers: Array.isArray(planData.teamMembers) ? planData.teamMembers : [],
       lastUpdated: new Date().toISOString()
     }
-    
+
     // Validate goal structure
-    dataToSave.goals = dataToSave.goals.map((goal: any) => ({
-      name: goal.name || "",
-      strategies: Array.isArray(goal.strategies) ? goal.strategies : [],
-      measures: Array.isArray(goal.measures) ? goal.measures.map((m: any) => ({
-        text: m.text || "",
-        dueDate: m.dueDate || undefined,
-        assignee: m.assignee || undefined,
-        archived: Boolean(m.archived)
-      })) : [],
-      actions: Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
-        text: a.text || "",
-        dueDate: a.dueDate || undefined,
-        assignee: a.assignee || undefined,
-        archived: Boolean(a.archived)
-      })) : [],
-      sponsor: goal.sponsor || ""
-    }))
-    
+
+
     const stringifiedData = JSON.stringify(dataToSave)
     console.log('Stringified data to save:', stringifiedData)
-    
+
     const result = await db.set('plan', stringifiedData)
     console.log('Save result:', result)
-    
+
     return NextResponse.json({ success: true, data: dataToSave })
   } catch (error) {
     console.error('POST /api/plan - Error saving plan data:', error)

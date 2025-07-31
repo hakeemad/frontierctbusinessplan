@@ -398,6 +398,32 @@ export default function Page() {
               className={`${goalColors[goalIndex % goalColors.length]} rounded-lg border-2 p-6 cursor-move hover:shadow-md transition-shadow`}
             >
               <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">🎯 Goal Sponsor</h4>
+                {mode === 'edit' ? (
+                  <select
+                    value={goal.sponsor || ''}
+                    onChange={e => updateGoal(goalIndex, 'sponsor', e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3"
+                  >
+                    <option value="">Select sponsor</option>
+                    {planData.teamMembers.filter(Boolean).map((member, i) => (
+                      <option key={i} value={member}>{member}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="mb-3">
+                    {goal.sponsor ? (
+                      <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                        🎯 {goal.sponsor}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No sponsor assigned</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
                 {mode === 'edit' ? (
                   <input
                     type="text"
@@ -566,31 +592,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">🎯 Goal Sponsor</h4>
-                  {mode === 'edit' ? (
-                    <select
-                      value={goal.sponsor}
-                      onChange={e => updateGoal(goalIndex, 'sponsor', e.target.value)}
-                      className="w-full text-sm border border-gray-200 rounded px-2 py-1"
-                    >
-                      <option value="">Select sponsor</option>
-                      {planData.teamMembers.filter(Boolean).map((member, i) => (
-                        <option key={i} value={member}>{member}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div>
-                      {goal.sponsor ? (
-                        <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                          🎯 {goal.sponsor}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">No sponsor assigned</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                
               </div>
             </div>
           ))}
