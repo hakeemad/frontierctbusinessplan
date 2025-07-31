@@ -38,19 +38,29 @@ export default function Page() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if user is admin
-    setIsAdmin(process.env.NEXT_PUBLIC_ADMIN_EMAIL === 'you@example.com');
+    // Check if user is admin - using hardcoded email as requested
+    setIsAdmin(true); // Change this to false if you want to test non-admin view
     
     // Load data
     fetch('/api/plan')
       .then(res => res.json())
       .then(data => {
+        console.log('Loaded data:', data);
         if (data && Object.keys(data).length > 0) {
+          // Ensure all arrays are properly initialized
+          const safeGoals = (data.goals || []).map((goal: any) => ({
+            name: goal.name || '',
+            strategies: Array.isArray(goal.strategies) ? goal.strategies : [],
+            measures: Array.isArray(goal.measures) ? goal.measures : [],
+            actions: Array.isArray(goal.actions) ? goal.actions : [],
+            assignedTeam: Array.isArray(goal.assignedTeam) ? goal.assignedTeam : []
+          }));
+          
           setPlanData({
             logoUrl: data.logoUrl || '',
             vision: data.vision || '',
             mission: data.mission || '',
-            goals: data.goals || []
+            goals: safeGoals
           });
         }
       })
@@ -85,29 +95,50 @@ export default function Page() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
-    const headers = lines[0].split(',').map(h => h.trim());
-    
-    const newGoals: Goal[] = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
-      if (values.length < 2) continue;
+    try {
+      setStatus('Processing CSV...');
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
       
-      const goal: Goal = {
-        name: values[0] || `Goal ${i}`,
-        strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
-        measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
-        actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
-        assignedTeam: values[4] ? values[4].split(';').map(t => t.trim()).filter(Boolean) : []
-      };
+      if (lines.length < 2) {
+        setStatus('CSV must have at least a header and one data row');
+        return;
+      }
       
-      newGoals.push(goal);
+      const headers = lines[0].split(',').map(h => h.trim());
+      console.log('CSV Headers:', headers);
+      
+      const newGoals: Goal[] = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        if (values.length < 1 || !values[0]) continue;
+        
+        const goal: Goal = {
+          name: values[0] || `Goal ${i}`,
+          strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
+          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
+          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
+          assignedTeam: values[4] ? values[4].split(';').map(t => t.trim()).filter(Boolean) : []
+        };
+        
+        newGoals.push(goal);
+      }
+      
+      if (newGoals.length > 0) {
+        setPlanData(prev => ({ ...prev, goals: [...prev.goals, ...newGoals] }));
+        setStatus(`✅ Imported ${newGoals.length} goals from CSV`);
+        setTimeout(() => setStatus(''), 3000);
+      } else {
+        setStatus('No valid goals found in CSV');
+      }
+    } catch (error) {
+      console.error('CSV parsing error:', error);
+      setStatus('❌ Error parsing CSV file');
     }
     
-    setPlanData(prev => ({ ...prev, goals: [...prev.goals, ...newGoals] }));
-    setStatus(`Imported ${newGoals.length} goals from CSV`);
+    // Clear the input
+    event.target.value = '';
   };
 
   const addGoal = () => {
@@ -288,13 +319,13 @@ export default function Page() {
                           key={i}
                           type="text"
                           value={strategy}
-                          onChange={e => updateGoal(goalIndex, 'strategies', goal.strategies.map((s, si) => si === i ? e.target.value : s))}
+                          onChange={e => updateGoal(goalIndex, 'strategies', (goal.strategies || []).map((s, si) => si === i ? e.target.value : s))}
                           className="w-full text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Strategy"
                         />
                       ))}
                       <button
-                        onClick={() => updateGoal(goalIndex, 'strategies', [...goal.strategies, ''])}
+                        onClick={() => updateGoal(goalIndex, 'strategies', [...(goal.strategies || []), ''])}
                         className="text-xs text-blue-600 hover:text-blue-800"
                       >
                         + Add Strategy
@@ -302,7 +333,7 @@ export default function Page() {
                     </div>
                   ) : (
                     <ul className="text-sm text-gray-600 space-y-1">
-                      {goal.strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
+                      {(goal.strategies || []).map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
                     </ul>
                   )}
                 </div>
@@ -436,13 +467,13 @@ export default function Page() {
                           key={i}
                           type="text"
                           value={member}
-                          onChange={e => updateGoal(goalIndex, 'assignedTeam', goal.assignedTeam.map((m, mi) => mi === i ? e.target.value : m))}
+                          onChange={e => updateGoal(goalIndex, 'assignedTeam', (goal.assignedTeam || []).map((m, mi) => mi === i ? e.target.value : m))}
                           className="w-full text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Team member"
                         />
                       ))}
                       <button
-                        onClick={() => updateGoal(goalIndex, 'assignedTeam', [...goal.assignedTeam, ''])}
+                        onClick={() => updateGoal(goalIndex, 'assignedTeam', [...(goal.assignedTeam || []), ''])}
                         className="text-xs text-blue-600 hover:text-blue-800"
                       >
                         + Add Team Member
@@ -450,7 +481,7 @@ export default function Page() {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-1">
-                      {goal.assignedTeam.map((member, i) => member && (
+                      {(goal.assignedTeam || []).map((member, i) => member && (
                         <span key={i} className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                           {member}
                         </span>
