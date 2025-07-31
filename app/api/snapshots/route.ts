@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import Database from '@replit/database'
 
@@ -6,17 +5,24 @@ const db = new Database()
 
 export async function GET() {
   try {
+    const db = new Database()
     console.log('GET /api/snapshots - Loading snapshots...')
-    
-    // List all keys that start with 'plan_version_'
+
+    // Get all snapshot keys
     const keys = await db.list('plan_version_')
     const snapshots = []
+
+    // Handle case where keys might be undefined or null
+    if (!keys || !Array.isArray(keys)) {
+      console.log('No snapshot keys found')
+      return NextResponse.json({ snapshots: [] })
+    }
 
     for (const key of keys) {
       try {
         const rawData = await db.get(key)
         let snapshotData
-        
+
         if (typeof rawData === 'string') {
           snapshotData = JSON.parse(rawData)
         } else if (rawData.ok && rawData.value) {
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('POST /api/snapshots - Saving snapshot...')
     const snapshotData = await request.json()
-    
+
     const result = await db.set(snapshotData.key, JSON.stringify(snapshotData))
     console.log('Snapshot save result:', result)
 

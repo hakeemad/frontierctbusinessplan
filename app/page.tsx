@@ -48,6 +48,7 @@ export default function Page() {
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [snapshotLabel, setSnapshotLabel] = useState('');
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true);
 
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
@@ -437,57 +438,182 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-            {/* Header with logo and title in horizontal row */}
-            <div className="flex items-center gap-4 mb-4">
-              {planData.logoUrl && (
-                <img src={planData.logoUrl} alt="Logo" className="w-20 h-auto rounded" />
-              )}
-              <h1 className="text-3xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
+        {/* Collapsible Header Panel - Only in Presentation Mode */}
+        {mode === 'presentation' && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            {/* Collapsed State - Always Visible */}
+            <div className="p-4 border-b bg-gray-50">
+              <button
+                onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                className="flex items-center justify-between w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {planData.logoUrl && (
+                    <img src={planData.logoUrl} alt="Logo" className="w-8 h-8 rounded object-cover" />
+                  )}
+                  <h1 className="text-xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">
+                    {isHeaderCollapsed ? 'Show Details' : 'Hide Details'}
+                  </span>
+                  <svg 
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isHeaderCollapsed ? '' : 'rotate-180'}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
             </div>
 
-            {/* Vision and Mission as subtle subtitles */}
-            {(planData.vision || planData.mission) && (
-              <div className="mb-4 text-sm text-gray-600 space-y-1">
-                {planData.vision && <p><span className="font-medium">Vision:</span> {planData.vision}</p>}
-                {planData.mission && <p><span className="font-medium">Mission:</span> {planData.mission}</p>}
-              </div>
-            )}
-        </div>
+            {/* Expanded Content */}
+            <div className={`transition-all duration-300 ease-in-out ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'} overflow-hidden`}>
+              <div className="p-6 space-y-4">
+                {/* Vision and Mission */}
+                {(planData.vision || planData.mission) && (
+                  <div className="text-sm text-gray-600 space-y-2">
+                    {planData.vision && (
+                      <p className="bg-blue-50 p-3 rounded-lg">
+                        <span className="font-medium text-blue-800">Vision:</span> 
+                        <span className="ml-2">{planData.vision}</span>
+                      </p>
+                    )}
+                    {planData.mission && (
+                      <p className="bg-green-50 p-3 rounded-lg">
+                        <span className="font-medium text-green-800">Mission:</span> 
+                        <span className="ml-2">{planData.mission}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
 
-        {/* Progress Summary Bar */}
-        <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
-              <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
-              <div className="text-green-700">Actions Complete</div>
-            </div>
-            
-            <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
-              <div className="text-blue-700">Measures Complete</div>
-            </div>
-            
-            <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
-              <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
-              <div className="text-purple-700">Goals Fully Complete</div>
-            </div>
-            
-            <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
-              <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
-              <div className="text-red-700">Overdue Items</div>
-            </div>
-            
-            <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
-              <div className="text-lg font-bold text-yellow-600">⏳</div>
-              <div className="text-yellow-700">Next Due</div>
-              <div className="text-xs mt-1 font-medium">
-                {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+                {/* Progress Summary */}
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                    <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                      <div className="text-xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
+                      <div className="text-green-700 text-xs">Actions Complete</div>
+                    </div>
+                    
+                    <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                      <div className="text-xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
+                      <div className="text-blue-700 text-xs">Measures Complete</div>
+                    </div>
+                    
+                    <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
+                      <div className="text-xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
+                      <div className="text-purple-700 text-xs">Goals Fully Complete</div>
+                    </div>
+                    
+                    <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+                      <div className="text-xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
+                      <div className="text-red-700 text-xs">Overdue Items</div>
+                    </div>
+                    
+                    <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+                      <div className="text-lg font-bold text-yellow-600">⏳</div>
+                      <div className="text-yellow-700 text-xs">Next Due</div>
+                      <div className="text-xs mt-1 font-medium truncate">
+                        {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="border-t pt-4 flex flex-wrap gap-2">
+                  {isAdmin && (
+                    <label className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
+                      📄 Import CSV
+                      <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+                    </label>
+                  )}
+                  
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={snapshotLabel}
+                      onChange={(e) => setSnapshotLabel(e.target.value)}
+                      placeholder="Snapshot label"
+                      className="px-2 py-1 text-sm border border-gray-300 rounded"
+                    />
+                    <button onClick={handleSaveSnapshot} className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                      📸 Save Snapshot
+                    </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => setShowSnapshots(!showSnapshots)} 
+                    className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    📋 View Snapshots
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Regular Header for Edit Mode */}
+        {mode !== 'presentation' && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+                {/* Header with logo and title in horizontal row */}
+                <div className="flex items-center gap-4 mb-4">
+                  {planData.logoUrl && (
+                    <img src={planData.logoUrl} alt="Logo" className="w-20 h-auto rounded" />
+                  )}
+                  <h1 className="text-3xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
+                </div>
+
+                {/* Vision and Mission as subtle subtitles */}
+                {(planData.vision || planData.mission) && (
+                  <div className="mb-4 text-sm text-gray-600 space-y-1">
+                    {planData.vision && <p><span className="font-medium">Vision:</span> {planData.vision}</p>}
+                    {planData.mission && <p><span className="font-medium">Mission:</span> {planData.mission}</p>}
+                  </div>
+                )}
+            </div>
+
+            {/* Progress Summary Bar */}
+            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                  <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
+                  <div className="text-green-700">Actions Complete</div>
+                </div>
+                
+                <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                  <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
+                  <div className="text-blue-700">Measures Complete</div>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
+                  <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
+                  <div className="text-purple-700">Goals Fully Complete</div>
+                </div>
+                
+                <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+                  <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
+                  <div className="text-red-700">Overdue Items</div>
+                </div>
+                
+                <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+                  <div className="text-lg font-bold text-yellow-600">⏳</div>
+                  <div className="text-yellow-700">Next Due</div>
+                  <div className="text-xs mt-1 font-medium">
+                    {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex gap-4 mb-6">
@@ -516,31 +642,36 @@ export default function Page() {
                 💾 Save Plan
               </button>
 
-              {/* Snapshot controls */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={snapshotLabel}
-                  onChange={(e) => setSnapshotLabel(e.target.value)}
-                  placeholder="Snapshot label"
-                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                />
-                <button onClick={handleSaveSnapshot} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                  📸 Save Snapshot
-                </button>
-                <button 
-                  onClick={() => setShowSnapshots(!showSnapshots)} 
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                >
-                  📋 View Snapshots
-                </button>
-              </div>
+              {/* Show controls only in Edit/Progress mode, not Presentation */}
+              {mode !== 'presentation' && (
+                <>
+                  {/* Snapshot controls */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={snapshotLabel}
+                      onChange={(e) => setSnapshotLabel(e.target.value)}
+                      placeholder="Snapshot label"
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                    />
+                    <button onClick={handleSaveSnapshot} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                      📸 Save Snapshot
+                    </button>
+                    <button 
+                      onClick={() => setShowSnapshots(!showSnapshots)} 
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                    >
+                      📋 View Snapshots
+                    </button>
+                  </div>
 
-              {isAdmin && (
-                <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
-                  📄 Import CSV
-                  <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
-                </label>
+                  {isAdmin && (
+                    <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
+                      📄 Import CSV
+                      <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+                    </label>
+                  )}
+                </>
               )}
             </div>
 
