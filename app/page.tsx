@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,7 +15,7 @@ interface Goal {
   strategies: string[];
   measures: MeasureAction[];
   actions: MeasureAction[];
-  sponsor: string;
+  owner: string;
 }
 
 interface PlanData {
@@ -23,6 +24,13 @@ interface PlanData {
   mission: string;
   goals: Goal[];
   teamMembers: string[];
+}
+
+interface Snapshot {
+  key: string;
+  timestamp: string;
+  label: string;
+  data: PlanData;
 }
 
 export default function Page() {
@@ -37,6 +45,9 @@ export default function Page() {
   const [mode, setMode] = useState<'edit' | 'presentation' | 'progress'>('edit');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [snapshotLabel, setSnapshotLabel] = useState('');
 
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
@@ -64,7 +75,7 @@ export default function Page() {
               assignee: a.assignee || undefined,
               archived: Boolean(a.archived)
             })) : [],
-            sponsor: goal.sponsor || ''
+            owner: goal.owner || goal.sponsor || goal.assignedTeam?.[0] || goal.assignees?.[0] || ''
           }));
 
           setPlanData({
@@ -77,6 +88,9 @@ export default function Page() {
         }
       })
       .catch(err => console.error('Failed to load plan:', err));
+
+    // Load snapshots
+    loadSnapshots();
   }, []);
 
   const handleSave = async () => {
@@ -101,6 +115,58 @@ export default function Page() {
       console.error('Save error:', error);
       setStatus('Save failed ❌');
     }
+  };
+
+  const handleSaveSnapshot = async () => {
+    try {
+      setStatus('Saving snapshot...');
+      const timestamp = new Date().toISOString();
+      const key = `plan_version_${timestamp}`;
+      
+      const snapshotData = {
+        key,
+        timestamp,
+        label: snapshotLabel || 'Snapshot',
+        data: planData
+      };
+
+      const response = await fetch('/api/snapshots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(snapshotData),
+      });
+
+      if (response.ok) {
+        setStatus('Snapshot saved ✅');
+        setSnapshotLabel('');
+        loadSnapshots();
+        setTimeout(() => setStatus(''), 2000);
+      } else {
+        setStatus('Snapshot save failed ❌');
+      }
+    } catch (error) {
+      console.error('Snapshot save error:', error);
+      setStatus('Snapshot save failed ❌');
+    }
+  };
+
+  const loadSnapshots = async () => {
+    try {
+      const response = await fetch('/api/snapshots');
+      if (response.ok) {
+        const data = await response.json();
+        setSnapshots(data.snapshots || []);
+      }
+    } catch (error) {
+      console.error('Failed to load snapshots:', error);
+    }
+  };
+
+  const viewSnapshot = (snapshot: Snapshot) => {
+    setPlanData(snapshot.data);
+    setShowSnapshots(false);
+    setStatus(`Viewing snapshot: ${snapshot.label}`);
+    setTimeout(() => setStatus(''), 3000);
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +225,7 @@ export default function Page() {
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
           measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
           actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
-          sponsor: values[4] ? values[4].trim() : ''
+          owner: values[4] ? values[4].trim() : ''
         };
 
         newGoals.push(goal);
@@ -212,7 +278,7 @@ export default function Page() {
         strategies: [],
         measures: [],
         actions: [],
-        sponsor: ''
+        owner: ''
       }]
     }));
   };
@@ -371,40 +437,6 @@ export default function Page() {
   return (
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Progress Summary Bar */}
-        <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4 sticky top-4 z-10">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
-              <div className="text-green-700">Actions Complete</div>
-            </div>
-            
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
-              <div className="text-blue-700">Measures Complete</div>
-            </div>
-            
-            <div className="bg-purple-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
-              <div className="text-purple-700">Goals Fully Complete</div>
-            </div>
-            
-            <div className="bg-red-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
-              <div className="text-red-700">Overdue Items</div>
-            </div>
-            
-            <div className="bg-yellow-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-yellow-600">⏳</div>
-              <div className="text-yellow-700">Next Due</div>
-              <div className="text-xs mt-1 font-medium">
-                {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white rounded-lg shadow-sm p-6">
             {/* Header with logo and title in horizontal row */}
             <div className="flex items-center gap-4 mb-4">
@@ -421,7 +453,43 @@ export default function Page() {
                 {planData.mission && <p><span className="font-medium">Mission:</span> {planData.mission}</p>}
               </div>
             )}
+        </div>
 
+        {/* Progress Summary Bar */}
+        <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+              <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
+              <div className="text-green-700">Actions Complete</div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
+              <div className="text-blue-700">Measures Complete</div>
+            </div>
+            
+            <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
+              <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
+              <div className="text-purple-700">Goals Fully Complete</div>
+            </div>
+            
+            <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+              <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
+              <div className="text-red-700">Overdue Items</div>
+            </div>
+            
+            <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+              <div className="text-lg font-bold text-yellow-600">⏳</div>
+              <div className="text-yellow-700">Next Due</div>
+              <div className="text-xs mt-1 font-medium">
+                {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex gap-4 mb-6">
               <button
                 onClick={() => setMode('edit')}
@@ -448,6 +516,26 @@ export default function Page() {
                 💾 Save Plan
               </button>
 
+              {/* Snapshot controls */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={snapshotLabel}
+                  onChange={(e) => setSnapshotLabel(e.target.value)}
+                  placeholder="Snapshot label"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                />
+                <button onClick={handleSaveSnapshot} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                  📸 Save Snapshot
+                </button>
+                <button 
+                  onClick={() => setShowSnapshots(!showSnapshots)} 
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  📋 View Snapshots
+                </button>
+              </div>
+
               {isAdmin && (
                 <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
                   📄 Import CSV
@@ -455,6 +543,33 @@ export default function Page() {
                 </label>
               )}
             </div>
+
+            {/* Snapshots Modal */}
+            {showSnapshots && (
+              <div className="mb-6 bg-gray-50 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-3">📋 Saved Snapshots</h3>
+                {snapshots.length === 0 ? (
+                  <p className="text-gray-500">No snapshots saved yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {snapshots.map((snapshot) => (
+                      <div key={snapshot.key} className="flex items-center justify-between bg-white p-3 rounded border">
+                        <div>
+                          <div className="font-medium">{snapshot.label}</div>
+                          <div className="text-sm text-gray-500">{new Date(snapshot.timestamp).toLocaleString()}</div>
+                        </div>
+                        <button
+                          onClick={() => viewSnapshot(snapshot)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          View
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
 
@@ -606,32 +721,6 @@ export default function Page() {
               className={`${goalColors[goalIndex % goalColors.length]} rounded-lg border-2 p-6 cursor-move hover:shadow-md transition-shadow`}
             >
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">🎯 Goal Sponsor</h4>
-                {mode === 'edit' ? (
-                  <select
-                    value={goal.sponsor || ''}
-                    onChange={e => updateGoal(goalIndex, 'sponsor', e.target.value)}
-                    className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3"
-                  >
-                    <option value="">Select sponsor</option>
-                    {planData.teamMembers.filter(Boolean).map((member, i) => (
-                      <option key={i} value={member}>{member}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="mb-3">
-                    {goal.sponsor ? (
-                      <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                        🎯 {goal.sponsor}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">No sponsor assigned</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-4">
                 {mode === 'edit' ? (
                   <input
                     type="text"
@@ -645,23 +734,49 @@ export default function Page() {
                 )}
               </div>
 
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">👤 Goal Owner</h4>
+                {mode === 'edit' ? (
+                  <select
+                    value={goal.owner || ''}
+                    onChange={e => updateGoal(goalIndex, 'owner', e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3"
+                  >
+                    <option value="">Select owner</option>
+                    {planData.teamMembers.filter(Boolean).map((member, i) => (
+                      <option key={i} value={member}>{member}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="mb-3">
+                    {goal.owner ? (
+                      <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                        👤 {goal.owner}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No owner assigned</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-700 mb-2">🎯 Strategies</h4>
                   {mode === 'edit' ? (
                     <div className="space-y-2">
-                      {goal.strategies.map((strategy, i) => (
+                      {Array.isArray(goal.strategies) && goal.strategies.map((strategy, i) => (
                         <input
                           key={i}
                           type="text"
                           value={strategy}
-                          onChange={e => updateGoal(goalIndex, 'strategies', Array.isArray(goal.strategies) ? goal.strategies.map((s, si) => si === i ? e.target.value : s) : [e.target.value])}
+                          onChange={e => updateGoal(goalIndex, 'strategies', goal.strategies.map((s, si) => si === i ? e.target.value : s))}
                           className="w-full text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Strategy"
                         />
                       ))}
                       <button
-                        onClick={() => updateGoal(goalIndex, 'strategies', [...(Array.isArray(goal.strategies) ? goal.strategies : []), ''])}
+                        onClick={() => updateGoal(goalIndex, 'strategies', [...(goal.strategies || []), ''])}
                         className="text-xs text-blue-600 hover:text-blue-800"
                       >
                         + Add Strategy
@@ -669,7 +784,7 @@ export default function Page() {
                     </div>
                   ) : (
                     <ul className="text-sm text-gray-600 space-y-1">
-                      {Array.isArray(goal.strategies) ? goal.strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>) : []}
+                      {Array.isArray(goal.strategies) && goal.strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
                     </ul>
                   )}
                 </div>

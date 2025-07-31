@@ -34,17 +34,21 @@ export async function GET() {
           if (goal.strategies && !Array.isArray(goal.strategies)) {
             goal.strategies = []
           }
-          // Handle migration from assignedTeam/assignees to sponsor
-          if (goal.assignedTeam && !goal.sponsor) {
-            goal.sponsor = Array.isArray(goal.assignedTeam) && goal.assignedTeam.length > 0 ? goal.assignedTeam[0] : ""
+          // Handle migration from assignedTeam/assignees/sponsor to owner
+          if (goal.assignedTeam && !goal.owner) {
+            goal.owner = Array.isArray(goal.assignedTeam) && goal.assignedTeam.length > 0 ? goal.assignedTeam[0] : ""
             delete goal.assignedTeam
           }
-          if (goal.assignees && !goal.sponsor) {
-            goal.sponsor = Array.isArray(goal.assignees) && goal.assignees.length > 0 ? goal.assignees[0] : ""
+          if (goal.assignees && !goal.owner) {
+            goal.owner = Array.isArray(goal.assignees) && goal.assignees.length > 0 ? goal.assignees[0] : ""
             delete goal.assignees
           }
-          if (!goal.sponsor) {
-            goal.sponsor = ""
+          if (goal.sponsor && !goal.owner) {
+            goal.owner = goal.sponsor
+            delete goal.sponsor
+          }
+          if (!goal.owner) {
+            goal.owner = ""
           }
           return goal
         })
@@ -86,16 +90,20 @@ export async function POST(request: NextRequest) {
       mission: planData.mission || "",
       goals: (planData.goals || []).map((goal: any) => {
           // Handle legacy data format conversion
-          if (goal.assignedTeam && !goal.sponsor) {
-            goal.sponsor = Array.isArray(goal.assignedTeam) && goal.assignedTeam.length > 0 ? goal.assignedTeam[0] : ""
+          if (goal.assignedTeam && !goal.owner) {
+            goal.owner = Array.isArray(goal.assignedTeam) && goal.assignedTeam.length > 0 ? goal.assignedTeam[0] : ""
             delete goal.assignedTeam
           }
-          if (goal.assignees && !goal.sponsor) {
-            goal.sponsor = Array.isArray(goal.assignees) && goal.assignees.length > 0 ? goal.assignees[0] : ""
+          if (goal.assignees && !goal.owner) {
+            goal.owner = Array.isArray(goal.assignees) && goal.assignees.length > 0 ? goal.assignees[0] : ""
             delete goal.assignees
           }
-          if (!goal.sponsor) {
-            goal.sponsor = ""
+          if (goal.sponsor && !goal.owner) {
+            goal.owner = goal.sponsor
+            delete goal.sponsor
+          }
+          if (!goal.owner) {
+            goal.owner = ""
           }
 
           // Ensure measures and actions are properly structured
@@ -108,8 +116,8 @@ export async function POST(request: NextRequest) {
 
           goal.actions = Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
             text: a.text || '',
-            dueDate: m.dueDate || undefined,
-            assignee: m.assignee || undefined,
+            dueDate: a.dueDate || undefined,
+            assignee: a.assignee || undefined,
             archived: Boolean(a.archived)
           })) : []
 
