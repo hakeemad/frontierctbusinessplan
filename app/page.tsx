@@ -417,7 +417,7 @@ export default function Page() {
 
       goal.measures.forEach(measure => {
         if (measure.assignee && measure.assignee.trim() && items[measure.assignee]) {
-          items[action.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
+          items[measure.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
         }
       });
     });
@@ -545,22 +545,22 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <main className="min-h-screen bg-gray-50 p-2 sm:p-4 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 w-full">
         {/* Collapsible Header Panel - Only in Presentation Mode */}
         {mode === 'presentation' && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             {/* Collapsed State - Always Visible */}
-            <div className="p-4 border-b bg-gray-50">
+            <div className="p-2 sm:p-4 border-b bg-gray-50">
               <button
                 onClick={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
                 className="flex items-center justify-between w-full text-left hover:bg-gray-100 rounded-lg p-2 transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   {planData.logoUrl && (
-                    <img src={planData.logoUrl} alt="Logo" className="w-8 h-8 rounded object-cover" />
+                    <img src={planData.logoUrl} alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0" />
                   )}
-                  <h1 className="text-xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
+                  <h1 className="text-sm sm:text-xl font-bold text-gray-900 truncate">🌍 Strategic Business Plan</h1>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">
@@ -580,7 +580,7 @@ export default function Page() {
 
             {/* Expanded Content */}
             <div className={`transition-all duration-300 ease-in-out ${isHeaderCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'} overflow-hidden`}>
-              <div className="p-6 space-y-4">
+              <div className="p-3 sm:p-6 space-y-3 sm:space-y-4">
                 {/* Vision and Mission */}
                 {(planData.vision || planData.mission) && (
                   <div className="text-sm text-gray-600 space-y-2">
@@ -602,7 +602,7 @@ export default function Page() {
                 {/* Progress Summary */}
                 <div className="border-t pt-4">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
                       <div className="text-xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
                       <div className="text-green-700 text-xs">Actions Complete</div>
@@ -634,7 +634,7 @@ export default function Page() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="border-t pt-4 flex flex-wrap gap-2">
+                <div className="border-t pt-3 sm:pt-4 flex flex-wrap gap-1 sm:gap-2">
                   {isAdmin && (
                     <label className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
                       📄 Import CSV
@@ -677,28 +677,28 @@ export default function Page() {
         {/* Regular Header for Edit Mode */}
         {mode !== 'presentation' && (
           <>
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
                 {/* Header with logo and title in horizontal row */}
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
                   {planData.logoUrl && (
-                    <img src={planData.logoUrl} alt="Logo" className="w-20 h-auto rounded" />
+                    <img src={planData.logoUrl} alt="Logo" className="w-12 sm:w-20 h-auto rounded flex-shrink-0" />
                   )}
-                  <h1 className="text-3xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
+                  <h1 className="text-lg sm:text-3xl font-bold text-gray-900 min-w-0">🌍 Strategic Business Plan</h1>
                 </div>
 
                 {/* Vision and Mission as subtle subtitles */}
                 {(planData.vision || planData.mission) && (
-                  <div className="mb-4 text-sm text-gray-600 space-y-1">
-                    {planData.vision && <p><span className="font-medium">Vision:</span> {planData.vision}</p>}
-                    {planData.mission && <p><span className="font-medium">Mission:</span> {planData.mission}</p>}
+                  <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600 space-y-1">
+                    {planData.vision && <p className="break-words"><span className="font-medium">Vision:</span> {planData.vision}</p>}
+                    {planData.mission && <p className="break-words"><span className="font-medium">Mission:</span> {planData.mission}</p>}
                   </div>
                 )}
             </div>
 
             {/* Progress Summary Bar */}
-            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-3">📊 Plan Progress Summary</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-3 sm:p-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">📊 Plan Progress Summary</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 text-xs sm:text-sm">
                 <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
                   <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
                   <div className="text-green-700">Actions Complete</div>
@@ -731,8 +731,9 @@ export default function Page() {
           </>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
+            {/* Desktop Controls */}
+            <div className="hidden sm:flex gap-4 mb-6">
               <button
                 onClick={() => setMode('edit')}
                 className={`px-4 py-2 rounded-lg ${mode === 'edit' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
@@ -762,39 +763,66 @@ export default function Page() {
               {mode !== 'presentation' && (
                 <>
                   {/* Snapshot controls */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <input
                       type="text"
                       value={snapshotLabel}
                       onChange={(e) => setSnapshotLabel(e.target.value)}
                       placeholder="Snapshot label"
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg min-w-0 flex-1 sm:flex-none sm:w-auto"
                     />
-                    <button onClick={handleSaveSnapshot} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    <button onClick={handleSaveSnapshot} className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
                       📸 Save Snapshot
                     </button>
                     <button 
                       onClick={() => setShowSnapshots(!showSnapshots)} 
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                      className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
                     >
                       📋 View Snapshots
                     </button>
                     <button 
                     onClick={handleSendDigest}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                    className="px-3 sm:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
                   >
                     📧 Send Digest
                   </button>
                   </div>
 
                   {isAdmin && (
-                    <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
+                    <label className="px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer text-sm">
                       📄 Import CSV
                       <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                     </label>
                   )}
                 </>
               )}
+            </div>
+
+            {/* Mobile Sticky Bottom Bar */}
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-50">
+              <div className="flex gap-2 justify-center max-w-screen-sm mx-auto">
+                <button
+                  onClick={() => setMode('edit')}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm ${mode === 'edit' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => setMode('presentation')}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm ${mode === 'presentation' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  📊 Present
+                </button>
+                <button
+                  onClick={() => setMode('progress')}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm ${mode === 'progress' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                  📈 Progress
+                </button>
+                <button onClick={handleSave} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm">
+                  💾 Save
+                </button>
+              </div>
             </div>
 
             {/* Snapshots Modal */}
@@ -827,8 +855,8 @@ export default function Page() {
             {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
 
             {mode === 'edit' && (
-              <div className="space-y-6 mb-8">
-                <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
                     <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
@@ -864,9 +892,9 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">👥 Team Members</label>
-                  <div className="flex flex-wrap gap-2 mb-3">
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">👥 Team Members</label>
+                  <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
                     {planData.teamMembers.map((member, i) => (
                       <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
                         <input
@@ -897,13 +925,13 @@ export default function Page() {
           </div>
 
         {mode === 'progress' ? (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">📈 Weekly Progress by Team Member</h2>
+          <div className="space-y-4 sm:space-y-6 pb-16 sm:pb-0">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">📈 Weekly Progress by Team Member</h2>
             {Object.entries(getProgressItems()).map(([memberName, items]) => (
-              <div key={memberName} className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <div key={memberName} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 break-words">
                   👤 {memberName}
-                  <span className="text-sm font-normal text-gray-500">({items.length} items)</span>
+                  <span className="text-xs sm:text-sm font-normal text-gray-500">({items.length} items)</span>
                 </h3>
 
                 {items.length === 0 ? (
@@ -965,9 +993,9 @@ export default function Page() {
         ) : (
           <>
             {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <div className="flex flex-wrap gap-4 items-center">
-                <h3 className="text-sm font-medium text-gray-700">🔍 Filters:</h3>
+            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
+              <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+                <h3 className="text-xs sm:text-sm font-medium text-gray-700 w-full sm:w-auto mb-1 sm:mb-0">🔍 Filters:</h3>
 
                 {/* Assignee Filter */}
                 <div className="flex items-center gap-2">
@@ -1023,7 +1051,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6 pb-16 sm:pb-0">
               {filteredGoals.map((goal, goalIndex) => (
             <div
               key={goalIndex}
@@ -1031,29 +1059,29 @@ export default function Page() {
               onDragStart={() => handleDragStart(goalIndex)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, goalIndex)}
-              className={`${goalColors[goalIndex % goalColors.length]} rounded-lg border-2 p-6 cursor-move hover:shadow-md transition-shadow`}
+              className={`${goalColors[goalIndex % goalColors.length]} rounded-lg border-2 p-3 sm:p-6 cursor-move hover:shadow-md transition-shadow overflow-hidden`}
             >
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 {mode === 'edit' ? (
                   <input
                     type="text"
                     value={planData.goals[goalIndex].name}
                     onChange={e => updateGoal(goalIndex, 'name', e.target.value)}
-                    className="w-full text-lg font-semibold bg-transparent border-b border-gray-300 pb-1 focus:border-gray-500 outline-none"
+                    className="w-full text-base sm:text-lg font-semibold bg-transparent border-b border-gray-300 pb-1 focus:border-gray-500 outline-none"
                     placeholder="Goal Name"
                   />
                 ) : (
-                  <h3 className="text-lg font-semibold text-gray-800">{planData.goals[goalIndex].name || 'Untitled Goal'}</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 break-words">{planData.goals[goalIndex].name || 'Untitled Goal'}</h3>
                 )}
               </div>
 
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">👤 Goal Owner</h4>
+              <div className="mb-3 sm:mb-4">
+                <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">👤 Goal Owner</h4>
                 {mode === 'edit' ? (
                   <select
                     value={planData.goals[goalIndex].owner || ''}
                     onChange={e => updateGoal(goalIndex, 'owner', e.target.value)}
-                    className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3"
+                    className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1 mb-2 sm:mb-3"
                   >
                     <option value="">Select owner</option>
                     {planData.teamMembers.filter(Boolean).map((member, i) => (
@@ -1061,9 +1089,9 @@ export default function Page() {
                     ))}
                   </select>
                 ) : (
-                  <div className="mb-3">
+                  <div className="mb-2 sm:mb-3">
                     {planData.goals[goalIndex].owner ? (
-                      <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+                      <span className="text-xs sm:text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium break-all">
                         👤 {planData.goals[goalIndex].owner}
                       </span>
                     ) : (
@@ -1073,18 +1101,18 @@ export default function Page() {
                 )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">🎯 Strategies</h4>
+                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">🎯 Strategies</h4>
                   {mode === 'edit' ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1 sm:space-y-2">
                       {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => (
                         <input
                           key={i}
                           type="text"
                           value={strategy}
                           onChange={e => updateGoal(goalIndex, 'strategies', planData.goals[goalIndex].strategies.map((s, si) => si === i ? e.target.value : s))}
-                          className="w-full text-sm border border-gray-200 rounded px-2 py-1"
+                          className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Strategy"
                         />
                       ))}
@@ -1096,43 +1124,43 @@ export default function Page() {
                       </button>
                     </div>
                   ) : (
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
+                    <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
+                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => strategy && <li key={i} className="break-words">• {strategy}</li>)}
                     </ul>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">📊 Measures</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">📊 Measures</h4>
+                  <div className="space-y-1 sm:space-y-2">
                     {goal.measures.map((measure, i) => (
-                      <div key={i} className="flex items-center gap-2">
+                      <div key={i} className="flex items-start gap-1 sm:gap-2">
                         <input
                           type="checkbox"
                           checked={measure.archived}
                           onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'archived', e.target.checked)}
-                          className="rounded"
+                          className="rounded mt-1 flex-shrink-0"
                         />
                         {mode === 'edit' ? (
-                          <div className="flex-1 space-y-1">
+                          <div className="flex-1 space-y-1 min-w-0">
                             <input
                               type="text"
                               value={measure.text}
                               onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'text', e.target.value)}
-                              className="w-full text-sm border border-gray-200 rounded px-2 py-1"
+                              className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1"
                               placeholder="Measure"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                               <input
                                 type="date"
                                 value={measure.dueDate || ''}
                                 onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'dueDate', e.target.value)}
-                                className="text-xs border border-gray-200 rounded px-1 py-0.5"
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1"
                               />
                               <select
                                 value={measure.assignee || ''}
                                 onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'assignee', e.target.value)}
-                                className="text-xs border border-gray-200 rounded px-1 py-0.5"
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1 truncate"
                               >
                                 <option value="">Select assignee</option>
                                 {planData.teamMembers.filter(Boolean).map((member, mi) => (
@@ -1142,13 +1170,13 @@ export default function Page() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex-1">
-                            <span className={`text-sm ${measure.archived ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-xs sm:text-sm ${measure.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
                               {measure.text}
                             </span>
-                            <div className="flex gap-2 mt-1">
-                              {measure.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⏰ {measure.dueDate}</span>}
-                              {measure.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded">👤 {measure.assignee}</span>}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {measure.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {measure.dueDate}</span>}
+                              {measure.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {measure.assignee}</span>}
                             </div>
                           </div>
                         )}
@@ -1166,36 +1194,36 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">⚡ Actions</h4>
-                  <div className="space-y-2">
+                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">⚡ Actions</h4>
+                  <div className="space-y-1 sm:space-y-2">
                     {goal.actions.map((action, i) => (
-                      <div key={i} className="flex items-center gap-2">
+                      <div key={i} className="flex items-start gap-1 sm:gap-2">
                         <input
                           type="checkbox"
                           checked={action.archived}
                           onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'archived', e.target.checked)}
-                          className="rounded"
+                          className="rounded mt-1 flex-shrink-0"
                         />
                         {mode === 'edit' ? (
-                          <div className="flex-1 space-y-1">
+                          <div className="flex-1 space-y-1 min-w-0">
                             <input
                               type="text"
                               value={action.text}
                               onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'text', e.target.value)}
-                              className="w-full text-sm border border-gray-200 rounded px-2 py-1"
+                              className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1"
                               placeholder="Action"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                               <input
                                 type="date"
                                 value={action.dueDate || ''}
                                 onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'dueDate', e.target.value)}
-                                className="text-xs border border-gray-200 rounded px-1 py-0.5"
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1"
                               />
                               <select
                                 value={action.assignee || ''}
                                 onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'assignee', e.target.value)}
-                                className="text-xs border border-gray-200 rounded px-1 py-0.5"
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1 truncate"
                               >
                                 <option value="">Select assignee</option>
                                 {planData.teamMembers.filter(Boolean).map((member, mi) => (
@@ -1205,13 +1233,13 @@ export default function Page() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex-1">
-                            <span className={`text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
                               {action.text}
                             </span>
-                            <div className="flex gap-2 mt-1">
-                              {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⏰ {action.dueDate}</span>}
-                              {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded">👤 {action.assignee}</span>}
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {action.dueDate}</span>}
+                              {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {action.assignee}</span>}
                             </div>
                           </div>
                         )}
@@ -1248,13 +1276,13 @@ export default function Page() {
               )}
 
           {mode === 'edit' && (
-            <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 flex items-center justify-center">
+            <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 flex items-center justify-center">
               <button
                 onClick={addGoal}
                 className="text-gray-600 hover:text-gray-800 text-center"
               >
-                <div className="text-2xl mb-2">+</div>
-                <div className="text-sm">Add New Goal</div>
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">+</div>
+                <div className="text-xs sm:text-sm">Add New Goal</div>
               </button>
             </div>
           )}
