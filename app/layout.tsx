@@ -1,10 +1,10 @@
+
 import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Frontier App',
   description: 'Strategic Business Planning Application',
-  generator: 'v0.dev',
   icons: {
     icon: '/favicon.png',
   },
@@ -12,11 +12,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
+      <head>
+        <title>Frontier App</title>
+        <meta name="description" content="Strategic Business Planning Application" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+      </head>
       <body>{children}</body>
     </html>
   )
