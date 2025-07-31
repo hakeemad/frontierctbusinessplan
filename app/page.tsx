@@ -49,6 +49,11 @@ export default function Page() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [snapshotLabel, setSnapshotLabel] = useState('');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true);
+  const [filters, setFilters] = useState({
+    assignee: '',
+    status: 'all', // 'all', 'archived', 'active'
+    dueStatus: 'all' // 'all', 'overdue', 'due_soon', 'no_due_date'
+  });
 
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
@@ -434,6 +439,45 @@ export default function Page() {
     if (isDueThisWeek(item.dueDate)) return 'text-yellow-600 bg-yellow-50';
     return 'text-gray-600 bg-gray-50';
   };
+
+  // Filter functions
+  const filterMeasureAction = (item: MeasureAction) => {
+    // Assignee filter
+    if (filters.assignee && item.assignee !== filters.assignee) {
+      return false;
+    }
+
+    // Status filter
+    if (filters.status === 'archived' && !item.archived) {
+      return false;
+    }
+    if (filters.status === 'active' && item.archived) {
+      return false;
+    }
+
+    // Due status filter
+    if (filters.dueStatus === 'overdue' && (!item.dueDate || !isOverdue(item.dueDate) || item.archived)) {
+      return false;
+    }
+    if (filters.dueStatus === 'due_soon' && (!item.dueDate || !isDueThisWeek(item.dueDate) || item.archived)) {
+      return false;
+    }
+    if (filters.dueStatus === 'no_due_date' && item.dueDate) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const getFilteredGoals = () => {
+    return planData.goals.map(goal => ({
+      ...goal,
+      measures: goal.measures.filter(filterMeasureAction),
+      actions: goal.actions.filter(filterMeasureAction)
+    }));
+  };
+
+  const filteredGoals = getFilteredGoals();
 
   return (
     <main className="min-h-screen bg-gray-50 p-4">
@@ -841,8 +885,68 @@ export default function Page() {
             )}
           </div>
         ) : (
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {planData.goals.map((goal, goalIndex) => (
+          <>
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex flex-wrap gap-4 items-center">
+                <h3 className="text-sm font-medium text-gray-700">🔍 Filters:</h3>
+                
+                {/* Assignee Filter */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Assignee:</label>
+                  <select
+                    value={filters.assignee}
+                    onChange={e => setFilters(prev => ({ ...prev, assignee: e.target.value }))}
+                    className="text-xs border border-gray-200 rounded px-2 py-1"
+                  >
+                    <option value="">All</option>
+                    {planData.teamMembers.filter(Boolean).map((member, i) => (
+                      <option key={i} value={member}>{member}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Status:</label>
+                  <select
+                    value={filters.status}
+                    onChange={e => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="text-xs border border-gray-200 rounded px-2 py-1"
+                  >
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+
+                {/* Due Status Filter */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Due Status:</label>
+                  <select
+                    value={filters.dueStatus}
+                    onChange={e => setFilters(prev => ({ ...prev, dueStatus: e.target.value }))}
+                    className="text-xs border border-gray-200 rounded px-2 py-1"
+                  >
+                    <option value="all">All</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="due_soon">Due Soon</option>
+                    <option value="no_due_date">No Due Date</option>
+                  </select>
+                </div>
+
+                {/* Clear Filters */}
+                <button
+                  onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all' })}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredGoals.map((goal, goalIndex) => (
             <div
               key={goalIndex}
               draggable={mode === 'edit'}
@@ -855,13 +959,13 @@ export default function Page() {
                 {mode === 'edit' ? (
                   <input
                     type="text"
-                    value={goal.name}
+                    value={planData.goals[goalIndex].name}
                     onChange={e => updateGoal(goalIndex, 'name', e.target.value)}
                     className="w-full text-lg font-semibold bg-transparent border-b border-gray-300 pb-1 focus:border-gray-500 outline-none"
                     placeholder="Goal Name"
                   />
                 ) : (
-                  <h3 className="text-lg font-semibold text-gray-800">{goal.name || 'Untitled Goal'}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">{planData.goals[goalIndex].name || 'Untitled Goal'}</h3>
                 )}
               </div>
 
@@ -869,7 +973,7 @@ export default function Page() {
                 <h4 className="text-sm font-medium text-gray-700 mb-2">👤 Goal Owner</h4>
                 {mode === 'edit' ? (
                   <select
-                    value={goal.owner || ''}
+                    value={planData.goals[goalIndex].owner || ''}
                     onChange={e => updateGoal(goalIndex, 'owner', e.target.value)}
                     className="w-full text-sm border border-gray-200 rounded px-2 py-1 mb-3"
                   >
@@ -880,9 +984,9 @@ export default function Page() {
                   </select>
                 ) : (
                   <div className="mb-3">
-                    {goal.owner ? (
+                    {planData.goals[goalIndex].owner ? (
                       <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-                        👤 {goal.owner}
+                        👤 {planData.goals[goalIndex].owner}
                       </span>
                     ) : (
                       <span className="text-xs text-gray-400">No owner assigned</span>
@@ -896,18 +1000,18 @@ export default function Page() {
                   <h4 className="font-medium text-gray-700 mb-2">🎯 Strategies</h4>
                   {mode === 'edit' ? (
                     <div className="space-y-2">
-                      {Array.isArray(goal.strategies) && goal.strategies.map((strategy, i) => (
+                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => (
                         <input
                           key={i}
                           type="text"
                           value={strategy}
-                          onChange={e => updateGoal(goalIndex, 'strategies', goal.strategies.map((s, si) => si === i ? e.target.value : s))}
+                          onChange={e => updateGoal(goalIndex, 'strategies', planData.goals[goalIndex].strategies.map((s, si) => si === i ? e.target.value : s))}
                           className="w-full text-sm border border-gray-200 rounded px-2 py-1"
                           placeholder="Strategy"
                         />
                       ))}
                       <button
-                        onClick={() => updateGoal(goalIndex, 'strategies', [...(goal.strategies || []), ''])}
+                        onClick={() => updateGoal(goalIndex, 'strategies', [...(planData.goals[goalIndex].strategies || []), ''])}
                         className="text-xs text-blue-600 hover:text-blue-800"
                       >
                         + Add Strategy
@@ -915,7 +1019,7 @@ export default function Page() {
                     </div>
                   ) : (
                     <ul className="text-sm text-gray-600 space-y-1">
-                      {Array.isArray(goal.strategies) && goal.strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
+                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => strategy && <li key={i}>• {strategy}</li>)}
                     </ul>
                   )}
                 </div>
@@ -1051,6 +1155,20 @@ export default function Page() {
             </div>
           ))}
 
+              {/* Show message if no goals match filters */}
+              {filteredGoals.every(goal => goal.measures.length === 0 && goal.actions.length === 0) && 
+               (filters.assignee || filters.status !== 'all' || filters.dueStatus !== 'all') && (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  <p>No items match the current filters.</p>
+                  <button
+                    onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all' })}
+                    className="text-blue-600 hover:text-blue-800 text-sm mt-2"
+                  >
+                    Clear filters to see all items
+                  </button>
+                </div>
+              )}
+
           {mode === 'edit' && (
             <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-6 flex items-center justify-center">
               <button
@@ -1062,7 +1180,8 @@ export default function Page() {
               </button>
             </div>
           )}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </main>
