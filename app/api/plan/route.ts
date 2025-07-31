@@ -35,8 +35,13 @@ export async function GET() {
           if (goal.strategies && !Array.isArray(goal.strategies)) {
             goal.strategies = []
           }
-          if (!goal.assignedTeam) {
-            goal.assignedTeam = []
+          // Handle migration from assignedTeam to assignees
+          if (goal.assignedTeam && !goal.assignees) {
+            goal.assignees = goal.assignedTeam
+            delete goal.assignedTeam
+          }
+          if (!goal.assignees) {
+            goal.assignees = []
           }
           return goal
         })
@@ -97,7 +102,7 @@ export async function POST(request: NextRequest) {
         assignee: a.assignee || undefined,
         archived: Boolean(a.archived)
       })) : [],
-      assignedTeam: Array.isArray(goal.assignedTeam) ? goal.assignedTeam : []
+      assignees: Array.isArray(goal.assignees) ? goal.assignees : (Array.isArray(goal.assignedTeam) ? goal.assignedTeam : [])
     }))
     
     const stringifiedData = JSON.stringify(dataToSave)
