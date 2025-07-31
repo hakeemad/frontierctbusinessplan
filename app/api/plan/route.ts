@@ -21,18 +21,36 @@ export async function GET() {
       } else {
         parsedData = rawData
       }
+      
+      // Migrate old format to new format if needed
+      if (parsedData.goals && Array.isArray(parsedData.goals)) {
+        parsedData.goals = parsedData.goals.map((goal: any) => {
+          if (goal.measures && Array.isArray(goal.measures) && typeof goal.measures[0] === 'string') {
+            // Convert old string arrays to new object format
+            goal.measures = goal.measures.map((text: string) => ({ text, archived: false }))
+          }
+          if (goal.actions && Array.isArray(goal.actions) && typeof goal.actions[0] === 'string') {
+            goal.actions = goal.actions.map((text: string) => ({ text, archived: false }))
+          }
+          if (goal.strategies && !Array.isArray(goal.strategies)) {
+            goal.strategies = []
+          }
+          if (!goal.assignedTeam) {
+            goal.assignedTeam = []
+          }
+          return goal
+        })
+      }
+      
       console.log('Parsed data:', parsedData)
       return NextResponse.json(parsedData)
     } else {
       console.log('No data found, returning default structure')
       const defaultData = {
+        logoUrl: "",
         vision: "",
         mission: "",
         goals: [],
-        measures: [],
-        actions: [],
-        team: [],
-        logoUrl: "",
         lastUpdated: new Date().toISOString()
       }
       return NextResponse.json(defaultData)
@@ -52,17 +70,33 @@ export async function POST(request: NextRequest) {
     const planData = await request.json()
     console.log('Received data:', planData)
     
-    // Handle both old format (logo, goalAreas, teamMembers) and new format (logoUrl, goals, measures, actions, team)
+    // Ensure data structure is correct
     const dataToSave = {
+      logoUrl: planData.logoUrl || "",
       vision: planData.vision || "",
       mission: planData.mission || "",
-      goals: planData.goals || planData.goalAreas || [],
-      measures: planData.measures || [],
-      actions: planData.actions || [],
-      team: planData.team || planData.teamMembers || [],
-      logoUrl: planData.logoUrl || planData.logo || "",
+      goals: planData.goals || [],
       lastUpdated: new Date().toISOString()
     }
+    
+    // Validate goal structure
+    dataToSave.goals = dataToSave.goals.map((goal: any) => ({
+      name: goal.name || "",
+      strategies: Array.isArray(goal.strategies) ? goal.strategies : [],
+      measures: Array.isArray(goal.measures) ? goal.measures.map((m: any) => ({
+        text: m.text || "",
+        dueDate: m.dueDate || undefined,
+        assignee: m.assignee || undefined,
+        archived: Boolean(m.archived)
+      })) : [],
+      actions: Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
+        text: a.text || "",
+        dueDate: a.dueDate || undefined,
+        assignee: a.assignee || undefined,
+        archived: Boolean(a.archived)
+      })) : [],
+      assignedTeam: Array.isArray(goal.assignedTeam) ? goal.assignedTeam : []
+    }))
     
     const stringifiedData = JSON.stringify(dataToSave)
     console.log('Stringified data to save:', stringifiedData)
