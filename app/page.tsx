@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -42,7 +41,7 @@ export default function Page() {
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
     setIsAdmin(true); // Change this to false if you want to test non-admin view
-    
+
     // Load data
     fetch('/api/plan')
       .then(res => res.json())
@@ -57,7 +56,7 @@ export default function Page() {
             actions: Array.isArray(goal.actions) ? goal.actions : [],
             assignedTeam: Array.isArray(goal.assignedTeam) ? goal.assignedTeam : []
           }));
-          
+
           setPlanData({
             logoUrl: data.logoUrl || '',
             vision: data.vision || '',
@@ -117,7 +116,7 @@ export default function Page() {
       console.error('Logo upload error:', error);
       setStatus('❌ Error uploading logo');
     }
-    
+
     // Clear the input
     event.target.value = '';
   };
@@ -130,21 +129,21 @@ export default function Page() {
       setStatus('Processing CSV...');
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
-      
+
       if (lines.length < 2) {
         setStatus('CSV must have at least a header and one data row');
         return;
       }
-      
+
       const headers = lines[0].split(',').map(h => h.trim());
       console.log('CSV Headers:', headers);
-      
+
       const newGoals: Goal[] = [];
-      
+
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
         if (values.length < 1 || !values[0]) continue;
-        
+
         const goal: Goal = {
           name: values[0] || `Goal ${i}`,
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
@@ -152,10 +151,10 @@ export default function Page() {
           actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
           assignedTeam: values[4] ? values[4].split(';').map(t => t.trim()).filter(Boolean) : []
         };
-        
+
         newGoals.push(goal);
       }
-      
+
       if (newGoals.length > 0) {
         setPlanData(prev => ({ ...prev, goals: [...prev.goals, ...newGoals] }));
         setStatus(`✅ Imported ${newGoals.length} goals from CSV`);
@@ -167,7 +166,7 @@ export default function Page() {
       console.error('CSV parsing error:', error);
       setStatus('❌ Error parsing CSV file');
     }
-    
+
     // Clear the input
     event.target.value = '';
   };
@@ -270,119 +269,113 @@ export default function Page() {
     <main className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">🌍 Strategic Business Plan</h1>
-          
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={() => setMode(mode === 'edit' ? 'presentation' : 'edit')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              {mode === 'edit' ? '📊 Presentation Mode' : '✏️ Edit Mode'}
-            </button>
-            
-            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-              💾 Save Plan
-            </button>
-            
-            {isAdmin && (
-              <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
-                📄 Import CSV
-                <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
-              </label>
-            )}
-          </div>
-
-          {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
-
-          {mode === 'edit' && (
-            <div className="space-y-6 mb-8">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
-                  <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
-                    📷 Choose Logo File
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-24 h-auto rounded" />}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
-                  <textarea
-                    value={planData.vision}
-                    onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                    placeholder="Our vision..."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
-                  <textarea
-                    value={planData.mission}
-                    onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                    placeholder="Our mission..."
-                  />
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">👥 Team Members</label>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {planData.teamMembers.map((member, i) => (
-                    <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
-                      <input
-                        type="text"
-                        value={member}
-                        onChange={e => updateTeamMember(i, e.target.value)}
-                        className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
-                        placeholder="Name"
-                      />
-                      <button
-                        onClick={() => removeTeamMember(i)}
-                        className="text-red-500 hover:text-red-700 text-xs ml-1"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={addTeamMember}
-                    className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
-                  >
-                    + Add Member
-                  </button>
-                </div>
-              </div>
+            {/* Header with logo and title in horizontal row */}
+            <div className="flex items-center gap-4 mb-4">
+              {planData.logoUrl && (
+                <img src={planData.logoUrl} alt="Logo" className="w-20 h-auto rounded" />
+              )}
+              <h1 className="text-3xl font-bold text-gray-900">🌍 Strategic Business Plan</h1>
             </div>
-          )}
 
-          {mode === 'presentation' && (planData.vision || planData.mission || planData.logoUrl || planData.teamMembers.length > 0) && (
-            <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mb-4 max-w-32 h-auto rounded" />}
-              {planData.vision && <div className="mb-4"><h3 className="font-semibold text-gray-700">Vision:</h3><p className="text-gray-600">{planData.vision}</p></div>}
-              {planData.mission && <div className="mb-4"><h3 className="font-semibold text-gray-700">Mission:</h3><p className="text-gray-600">{planData.mission}</p></div>}
-              {planData.teamMembers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">Team:</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {planData.teamMembers.filter(Boolean).map((member, i) => (
-                      <span key={i} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                        👤 {member}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+            {/* Vision and Mission as subtle subtitles */}
+            {(planData.vision || planData.mission) && (
+              <div className="mb-4 text-sm text-gray-600 space-y-1">
+                {planData.vision && <p><span className="font-medium">Vision:</span> {planData.vision}</p>}
+                {planData.mission && <p><span className="font-medium">Mission:</span> {planData.mission}</p>}
+              </div>
+            )}
+
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setMode(mode === 'edit' ? 'presentation' : 'edit')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {mode === 'edit' ? '📊 Presentation Mode' : '✏️ Edit Mode'}
+              </button>
+
+              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                💾 Save Plan
+              </button>
+
+              {isAdmin && (
+                <label className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
+                  📄 Import CSV
+                  <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
+                </label>
               )}
             </div>
-          )}
-        </div>
+
+            {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
+
+            {mode === 'edit' && (
+              <div className="space-y-6 mb-8">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
+                    <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
+                      📷 Choose Logo File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-20 h-auto rounded" />}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
+                    <textarea
+                      value={planData.vision}
+                      onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                      placeholder="Our vision..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
+                    <textarea
+                      value={planData.mission}
+                      onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                      placeholder="Our mission..."
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">👥 Team Members</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {planData.teamMembers.map((member, i) => (
+                      <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
+                        <input
+                          type="text"
+                          value={member}
+                          onChange={e => updateTeamMember(i, e.target.value)}
+                          className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
+                          placeholder="Name"
+                        />
+                        <button
+                          onClick={() => removeTeamMember(i)}
+                          className="text-red-500 hover:text-red-700 text-xs ml-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={addTeamMember}
+                      className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
+                    >
+                      + Add Member
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {planData.goals.map((goal, goalIndex) => (
