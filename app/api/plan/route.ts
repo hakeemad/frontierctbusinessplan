@@ -51,6 +51,7 @@ export async function GET() {
         vision: "",
         mission: "",
         goals: [],
+        teamMembers: [],
         lastUpdated: new Date().toISOString()
       }
       return NextResponse.json(defaultData)
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
       vision: planData.vision || "",
       mission: planData.mission || "",
       goals: planData.goals || [],
+      teamMembers: Array.isArray(planData.teamMembers) ? planData.teamMembers : [],
       lastUpdated: new Date().toISOString()
     }
     
