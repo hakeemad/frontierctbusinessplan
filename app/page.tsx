@@ -1206,34 +1206,6 @@ export default function Page() {
 
               <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">🎯 Strategies</h4>
-                  {mode === 'edit' ? (
-                    <div className="space-y-1 sm:space-y-2">
-                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => (
-                        <input
-                          key={i}
-                          type="text"
-                          value={strategy}
-                          onChange={e => updateGoal(goalIndex, 'strategies', planData.goals[goalIndex].strategies.map((s, si) => si === i ? e.target.value : s))}
-                          className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1"
-                          placeholder="Strategy"
-                        />
-                      ))}
-                      <button
-                        onClick={() => updateGoal(goalIndex, 'strategies', [...(planData.goals[goalIndex].strategies || []), ''])}
-                        className="text-xs text-blue-600 hover:text-blue-800"
-                      >
-                        + Add Strategy
-                      </button>
-                    </div>
-                  ) : (
-                    <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
-                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => strategy && <li key={i} className="break-words">• {strategy}</li>)}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
                   <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">📊 Measures</h4>
                   <div className="space-y-1 sm:space-y-2">
                     {goal.measures.map((measure, i) => (
@@ -1294,6 +1266,34 @@ export default function Page() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">🎯 Strategies</h4>
+                  {mode === 'edit' ? (
+                    <div className="space-y-1 sm:space-y-2">
+                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          value={strategy}
+                          onChange={e => updateGoal(goalIndex, 'strategies', planData.goals[goalIndex].strategies.map((s, si) => si === i ? e.target.value : s))}
+                          className="w-full text-xs sm:text-sm border border-gray-200 rounded px-2 py-1"
+                          placeholder="Strategy"
+                        />
+                      ))}
+                      <button
+                        onClick={() => updateGoal(goalIndex, 'strategies', [...(planData.goals[goalIndex].strategies || []), ''])}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        + Add Strategy
+                      </button>
+                    </div>
+                  ) : (
+                    <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
+                      {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => strategy && <li key={i} className="break-words">• {strategy}</li>)}
+                    </ul>
+                  )}
                 </div>
 
                 <div>
