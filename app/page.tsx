@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -105,7 +104,7 @@ export default function Page() {
 
       // Check if content has changed by comparing with last saved version
       const hasChanged = await checkForChanges();
-      
+
       const response = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,13 +135,13 @@ export default function Page() {
       if (response.ok) {
         const data = await response.json();
         const latestVersion = data.versions?.[0];
-        
+
         if (!latestVersion) return true; // No previous version, so this is a change
-        
+
         // Simple content comparison - stringify and compare
         const currentContent = JSON.stringify(planData);
         const previousContent = JSON.stringify(latestVersion.data);
-        
+
         return currentContent !== previousContent;
       }
       return true; // If we can't check, assume there are changes
@@ -191,10 +190,10 @@ export default function Page() {
   const restoreVersion = async (version: PlanVersion) => {
     try {
       setStatus('Restoring version...');
-      
+
       // Update local state
       setPlanData(version.data);
-      
+
       // Save restored version as current plan
       const response = await fetch('/api/plan', {
         method: 'POST',
@@ -422,7 +421,7 @@ export default function Page() {
     };
   };
 
-  // Helper functions for progress view - defined early to avoid initialization errors
+  // Helper functions for progress view
   const isOverdue = (dueDate: string | undefined) => {
     if (!dueDate) return false;
     const today = new Date();
@@ -883,7 +882,7 @@ export default function Page() {
                   onClick={() => {
                     const date = new Date().toISOString().split('T')[0];
                     const filename = `weekly-progress-${date}.html`;
-                    
+
                     const progressItems = getProgressItems();
                     let htmlContent = `<!DOCTYPE html>
 <html>
@@ -936,7 +935,7 @@ export default function Page() {
                                           isOverdue(entry.item.dueDate) && !entry.item.archived ? 'overdue' :
                                           isDueThisWeek(entry.item.dueDate) && !entry.item.archived ? 'due-soon' : 'other';
                         const icon = getStatusIcon(entry.item);
-                        
+
                         htmlContent += `
         <div class="item ${statusClass}">
             <strong>${icon} ${entry.type.toUpperCase()}</strong> from "${entry.goalName}"<br>
@@ -961,7 +960,7 @@ export default function Page() {
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    
+
                     setStatus(`📥 Weekly report downloaded: ${filename}`);
                     setTimeout(() => setStatus(''), 3000);
                   }}
@@ -1011,7 +1010,7 @@ export default function Page() {
             {Object.entries(getProgressItems()).map(([memberName, items]) => {
               const completed = items.filter(item => item.item.archived).length;
               const completionPercentage = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
-              
+
               return (
                 <div key={memberName} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -1166,13 +1165,44 @@ export default function Page() {
             >
               <div className="mb-3 sm:mb-4">
                 {mode === 'edit' ? (
-                  <input
-                    type="text"
-                    value={planData.goals[goalIndex].name}
-                    onChange={e => updateGoal(goalIndex, 'name', e.target.value)}
-                    className="w-full text-base sm:text-lg font-semibold bg-transparent border-b border-gray-300 pb-1 focus:border-gray-500 outline-none"
-                    placeholder="Goal Name"
-                  />
+                  <div className="relative"> {/* Add relative positioning */}
+                    <input
+                      type="text"
+                      value={planData.goals[goalIndex].name}
+                      onChange={e => updateGoal(goalIndex, 'name', e.target.value)}
+                      className="w-full text-base sm:text-lg font-semibold bg-transparent border-b border-gray-300 pb-1 focus:border-gray-500 outline-none"
+                      placeholder="Goal Name"
+                    />
+                     <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this goal and all related items?')) {
+                          const newGoals = [...planData.goals];
+                          newGoals.splice(goalIndex, 1);
+                          setPlanData(prev => ({ ...prev, goals: newGoals }));
+                           // Optimistically update versions to remove the goal from future versions
+                          setVersions(prevVersions =>
+                            prevVersions.map(version => {
+                              const newVersionGoals = [...version.data.goals];
+                              newVersionGoals.splice(goalIndex, 1); // remove the goal in version
+                              return {
+                                ...version,
+                                data: {
+                                  ...version.data,
+                                  goals: newVersionGoals
+                                }
+                              };
+                            })
+                          );
+
+                          handleSave(); // Save the plan to persist changes and trigger auto-save version if content changed
+
+                        }
+                      }}
+                      className="absolute top-0 right-0 text-red-500 hover:text-red-700"
+                    >
+                      🗑️{/* Delete Icon */}
+                    </button>
+                  </div>
                 ) : (
                   <h3 className="text-base sm:text-lg font-semibold text-gray-800 break-words">{planData.goals[goalIndex].name || 'Untitled Goal'}</h3>
                 )}
