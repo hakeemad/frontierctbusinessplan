@@ -478,71 +478,7 @@ export default function Page() {
 
   const filteredGoals = getFilteredGoals();
 
-  // Function to send weekly digest
-  const handleSendDigest = () => {
-    // Implement the logic to generate and display the digest here
-    // For now, let's just log a message to the console
-    console.log('Sending Weekly Digest...');
-
-    // Prepare the digest content
-    let digestContent = "Weekly Progress Digest:\n\n";
-
-    for (const member of planData.teamMembers) {
-        digestContent += `Team Member: ${member}\n`;
-
-        // Find all actions and measures assigned to this member
-        const memberItems = Object.entries(getProgressItems())
-            .filter(([memberName, items]) => memberName === member)
-            .flatMap(([, items]) => items);
-
-        if (memberItems.length === 0) {
-            digestContent += "No assigned items.\n\n";
-            continue;
-        }
-
-        // Group items by status
-        const completed = memberItems.filter(item => item.item.archived);
-        const overdue = memberItems.filter(item => !item.item.archived && item.item.dueDate && isOverdue(item.item.dueDate));
-        const dueSoon = memberItems.filter(item => !item.item.archived && item.item.dueDate && isDueThisWeek(item.item.dueDate));
-
-        // Add items to the digest content
-        digestContent += "\n✅ Completed This Week:\n";
-        if (completed.length > 0) {
-            for (const item of completed) {
-                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
-            }
-        } else {
-            digestContent += "None\n";
-        }
-
-        digestContent += "\n⚠️ Overdue:\n";
-        if (overdue.length > 0) {
-            for (const item of overdue) {
-                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
-            }
-        } else {
-            digestContent += "None\n";
-        }
-
-        digestContent += "\n⏳ Due in the Next 7 Days:\n";
-        if (dueSoon.length > 0) {
-            for (const item of dueSoon) {
-                digestContent += `- ${item.goalName}: ${item.item.text} (Due: ${item.item.dueDate})\n`;
-            }
-        } else {
-            digestContent += "None\n";
-        }
-
-        digestContent += "\n";
-    }
-
-    // Display the digest in an in-app modal (for now, using alert)
-    alert(digestContent);
-
-    // Optional: Console log or downloadable HTML
-    console.log(digestContent);
-    // You can add code here to generate and download an HTML file
-  };
+  
 
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-4 overflow-x-hidden">
@@ -662,12 +598,7 @@ export default function Page() {
                     📋 View Snapshots
                   </button>
 
-                  <button 
-                    onClick={handleSendDigest}
-                    className="px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                  >
-                    📧 Send Digest
-                  </button>
+                  
                 </div>
               </div>
             </div>
@@ -780,12 +711,7 @@ export default function Page() {
                     >
                       📋 View Snapshots
                     </button>
-                    <button 
-                    onClick={handleSendDigest}
-                    className="px-3 sm:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm"
-                  >
-                    📧 Send Digest
-                  </button>
+                    
                   </div>
 
                   {isAdmin && (
