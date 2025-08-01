@@ -502,13 +502,6 @@ export default function Page() {
     return '📋';
   };
 
-  const getStatusColor = (item: MeasureAction) => {
-    if (item.archived) return 'text-green-600 bg-green-50';
-    if (isOverdue(item.dueDate)) return 'text-red-600 bg-red-50';
-    if (isDueThisWeek(item.dueDate)) return 'text-yellow-600 bg-yellow-50';
-    return 'text-gray-600 bg-gray-50';
-  };
-
   // Filter functions
   const filterMeasureAction = (item: MeasureAction) => {
     // Assignee filter
