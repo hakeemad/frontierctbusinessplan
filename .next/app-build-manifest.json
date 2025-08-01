@@ -16,10 +16,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/plan/route.js"
     ],
-    "/api/snapshots/route": [
+    "/api/versions/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/snapshots/route.js"
+      "static/chunks/app/api/versions/route.js"
     ]
   }
 }
