@@ -7,6 +7,8 @@ interface MeasureAction {
   dueDate?: string;
   assignee?: string;
   archived: boolean;
+  status?: 'Not Started' | 'In Progress' | 'Done' | 'Blocked';
+  notes?: string;
 }
 
 interface Goal {
@@ -51,6 +53,8 @@ export default function Page() {
     status: 'all', // 'all', 'archived', 'active'
     dueStatus: 'all' // 'all', 'overdue', 'due_soon', 'no_due_date'
   });
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [selectedNote, setSelectedNote] = useState({ title: '', content: '' });
 
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
@@ -70,13 +74,17 @@ export default function Page() {
               text: m.text || '',
               dueDate: m.dueDate || undefined,
               assignee: m.assignee || undefined,
-              archived: Boolean(m.archived)
+              archived: Boolean(m.archived),
+              status: m.status || 'Not Started',
+              notes: m.notes || ''
             })) : [],
             actions: Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
               text: a.text || '',
               dueDate: a.dueDate || undefined,
               assignee: a.assignee || undefined,
-              archived: Boolean(a.archived)
+              archived: Boolean(a.archived),
+              status: a.status || 'Not Started',
+              notes: a.notes || ''
             })) : [],
             owner: goal.owner || goal.sponsor || goal.assignedTeam?.[0] || goal.assignees?.[0] || ''
           }));
@@ -268,8 +276,8 @@ export default function Page() {
         const goal: Goal = {
           name: values[0] || `Goal ${i}`,
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
-          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
-          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
+          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false, status: 'Not Started' as const, notes: '' })).filter(m => m.text) : [],
+          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false, status: 'Not Started' as const, notes: '' })).filter(a => a.text) : [],
           owner: values[4] ? values[4].trim() : ''
         };
 
@@ -350,7 +358,7 @@ export default function Page() {
       goals: prev.goals.map((goal, i) => 
         i === goalIndex ? {
           ...goal,
-          [type]: [...goal[type], { text: '', archived: false }]
+          [type]: [...goal[type], { text: '', archived: false, status: 'Not Started', notes: '' }]
         } : goal
       )
     }));
@@ -442,6 +450,21 @@ export default function Page() {
     const due = new Date(dueDate);
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     return due >= today && due <= nextWeek;
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'Done': return 'bg-green-100 text-green-800 border-green-200';
+      case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Blocked': return 'bg-red-100 text-red-800 border-red-200';
+      case 'Not Started': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  const showNoteInModal = (title: string, content: string) => {
+    setSelectedNote({ title, content });
+    setShowNoteModal(true);
   };
 
   const progressSummary = getProgressSummary();
@@ -947,7 +970,9 @@ export default function Page() {
         <div class="item ${statusClass}">
             <strong>${icon} ${entry.type.toUpperCase()}</strong> from "${entry.goalName}"<br>
             ${entry.item.text || 'Untitled item'}
+            ${entry.item.status ? `<br><small>📊 Status: ${entry.item.status}</small>` : ''}
             ${entry.item.dueDate ? `<br><small>📅 Due: ${entry.item.dueDate}</small>` : ''}
+            ${entry.item.notes ? `<br><small>📝 Notes: ${entry.item.notes}</small>` : ''}
         </div>`;
                       });
 
@@ -1062,19 +1087,33 @@ export default function Page() {
                               {entry.item.text || 'Untitled item'}
                             </p>
 
-                            {entry.item.dueDate && (
-                              <div className="flex items-center gap-2 mt-1">
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {entry.item.status && (
+                                <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(entry.item.status)}`}>
+                                  📊 {entry.item.status}
+                                </span>
+                              )}
+                              {entry.item.dueDate && (
                                 <span className="text-xs bg-white/50 px-2 py-1 rounded">
                                   📅 Due: {entry.item.dueDate}
                                 </span>
-                                {isOverdue(entry.item.dueDate) && !entry.item.archived && (
-                                  <span className="text-xs text-red-600 font-medium">OVERDUE</span>
-                                )}
-                                {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
-                                  <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
-                                )}
-                              </div>
-                            )}
+                              )}
+                              {entry.item.notes && (
+                                <button
+                                  onClick={() => showNoteInModal(`${entry.type}: ${entry.item.text}`, entry.item.notes || '')}
+                                  className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer px-1"
+                                  title="View notes"
+                                >
+                                  📝 Notes
+                                </button>
+                              )}
+                              {isOverdue(entry.item.dueDate) && !entry.item.archived && (
+                                <span className="text-xs text-red-600 font-medium">OVERDUE</span>
+                              )}
+                              {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
+                                <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
+                              )}
+                            </div>
                           </div>
 
                           <div className="text-right">
@@ -1280,15 +1319,47 @@ export default function Page() {
                                 ))}
                               </select>
                             </div>
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                              <select
+                                value={measure.status || 'Not Started'}
+                                onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'status', e.target.value)}
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1"
+                              >
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Done">Done</option>
+                                <option value="Blocked">Blocked</option>
+                              </select>
+                            </div>
+                            <textarea
+                              value={measure.notes || ''}
+                              onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'notes', e.target.value)}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 h-12 resize-none"
+                              placeholder="Notes (optional)"
+                            />
                           </div>
                         ) : (
                           <div className="flex-1 min-w-0">
                             <span className={`text-xs sm:text-sm ${measure.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
                               {measure.text}
                             </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1 mt-1 items-center">
+                              {measure.status && (
+                                <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(measure.status)}`}>
+                                  {measure.status}
+                                </span>
+                              )}
                               {measure.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {measure.dueDate}</span>}
                               {measure.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {measure.assignee}</span>}
+                              {measure.notes && (
+                                <button
+                                  onClick={() => showNoteInModal(`Measure: ${measure.text}`, measure.notes || '')}
+                                  className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer"
+                                  title="View notes"
+                                >
+                                  📝
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1371,15 +1442,47 @@ export default function Page() {
                                 ))}
                               </select>
                             </div>
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                              <select
+                                value={action.status || 'Not Started'}
+                                onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'status', e.target.value)}
+                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1"
+                              >
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Done">Done</option>
+                                <option value="Blocked">Blocked</option>
+                              </select>
+                            </div>
+                            <textarea
+                              value={action.notes || ''}
+                              onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'notes', e.target.value)}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 h-12 resize-none"
+                              placeholder="Notes (optional)"
+                            />
                           </div>
                         ) : (
                           <div className="flex-1 min-w-0">
                             <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
                               {action.text}
                             </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1 mt-1 items-center">
+                              {action.status && (
+                                <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(action.status)}`}>
+                                  {action.status}
+                                </span>
+                              )}
                               {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {action.dueDate}</span>}
                               {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {action.assignee}</span>}
+                              {action.notes && (
+                                <button
+                                  onClick={() => showNoteInModal(`Action: ${action.text}`, action.notes || '')}
+                                  className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer"
+                                  title="View notes"
+                                >
+                                  📝
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1430,6 +1533,36 @@ export default function Page() {
           </>
         )}
       </div>
+
+      {/* Notes Modal */}
+      {showNoteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-80">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-800 truncate">{selectedNote.title}</h3>
+              <button
+                onClick={() => setShowNoteModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 max-h-60 overflow-y-auto">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                {selectedNote.content || 'No notes available.'}
+              </p>
+            </div>
+            <div className="flex justify-end p-4 border-t">
+              <button
+                onClick={() => setShowNoteModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

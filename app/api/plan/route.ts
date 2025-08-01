@@ -26,10 +26,31 @@ export async function GET() {
         parsedData.goals = parsedData.goals.map((goal: any) => {
           if (goal.measures && Array.isArray(goal.measures) && typeof goal.measures[0] === 'string') {
             // Convert old string arrays to new object format
-            goal.measures = goal.measures.map((text: string) => ({ text, archived: false }))
+            goal.measures = goal.measures.map((text: string) => ({ text, archived: false, status: 'Not Started', notes: '' }))
           }
           if (goal.actions && Array.isArray(goal.actions) && typeof goal.actions[0] === 'string') {
-            goal.actions = goal.actions.map((text: string) => ({ text, archived: false }))
+            goal.actions = goal.actions.map((text: string) => ({ text, archived: false, status: 'Not Started', notes: '' }))
+          }
+          // Ensure new fields exist on existing measures/actions
+          if (goal.measures && Array.isArray(goal.measures)) {
+            goal.measures = goal.measures.map((m: any) => ({
+              text: m.text || '',
+              dueDate: m.dueDate || undefined,
+              assignee: m.assignee || undefined,
+              archived: Boolean(m.archived),
+              status: m.status || 'Not Started',
+              notes: m.notes || ''
+            }))
+          }
+          if (goal.actions && Array.isArray(goal.actions)) {
+            goal.actions = goal.actions.map((a: any) => ({
+              text: a.text || '',
+              dueDate: a.dueDate || undefined,
+              assignee: a.assignee || undefined,
+              archived: Boolean(a.archived),
+              status: a.status || 'Not Started',
+              notes: a.notes || ''
+            }))
           }
           if (goal.strategies && !Array.isArray(goal.strategies)) {
             goal.strategies = []
@@ -111,14 +132,18 @@ export async function POST(request: NextRequest) {
             text: m.text || '',
             dueDate: m.dueDate || undefined,
             assignee: m.assignee || undefined,
-            archived: Boolean(m.archived)
+            archived: Boolean(m.archived),
+            status: m.status || 'Not Started',
+            notes: m.notes || ''
           })) : []
 
           goal.actions = Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
             text: a.text || '',
             dueDate: a.dueDate || undefined,
             assignee: a.assignee || undefined,
-            archived: Boolean(a.archived)
+            archived: Boolean(a.archived),
+            status: a.status || 'Not Started',
+            notes: a.notes || ''
           })) : []
 
           goal.strategies = Array.isArray(goal.strategies) ? goal.strategies : []
