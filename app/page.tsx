@@ -277,8 +277,15 @@ export default function Page() {
       }
 
       if (newGoals.length > 0) {
-        setPlanData(prev => ({ ...prev, goals: [...prev.goals, ...newGoals] }));
-        setStatus(`✅ Imported ${newGoals.length} goals from CSV`);
+        setPlanData(prev => ({ 
+          ...prev, 
+          goals: newGoals,  // Replace all goals instead of appending
+          // Optionally reset other fields for a complete clean slate
+          // vision: '',
+          // mission: '',
+          // logoUrl: ''
+        }));
+        setStatus(`✅ Replaced entire plan with ${newGoals.length} goals from CSV`);
         setTimeout(() => setStatus(''), 3000);
       } else {
         setStatus('No valid goals found in CSV');
@@ -611,7 +618,7 @@ export default function Page() {
                 <div className="border-t pt-3 sm:pt-4 flex flex-wrap gap-1 sm:gap-2">
                   {isAdmin && (
                     <label className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer">
-                      📄 Import CSV
+                      📄 Replace with CSV
                       <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                     </label>
                   )}
@@ -725,7 +732,7 @@ export default function Page() {
 
                   {isAdmin && (
                     <label className="px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer text-sm">
-                      📄 Import CSV
+                      📄 Replace with CSV
                       <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                     </label>
                   )}
