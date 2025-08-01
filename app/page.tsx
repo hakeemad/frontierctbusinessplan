@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,10 +26,9 @@ interface PlanData {
   teamMembers: string[];
 }
 
-interface Snapshot {
-  key: string;
+interface PlanVersion {
+  id: string;
   timestamp: string;
-  label: string;
   data: PlanData;
 }
 
@@ -44,9 +44,8 @@ export default function Page() {
   const [mode, setMode] = useState<'edit' | 'presentation' | 'progress'>('edit');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showSnapshots, setShowSnapshots] = useState(false);
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [snapshotLabel, setSnapshotLabel] = useState('');
+  const [showVersions, setShowVersions] = useState(false);
+  const [versions, setVersions] = useState<PlanVersion[]>([]);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(true);
   const [filters, setFilters] = useState({
     assignee: '',
@@ -94,8 +93,8 @@ export default function Page() {
       })
       .catch(err => console.error('Failed to load plan:', err));
 
-    // Load snapshots
-    loadSnapshots();
+    // Load versions
+    loadVersions();
   }, []);
 
   const handleSave = async () => {
@@ -111,6 +110,8 @@ export default function Page() {
       });
 
       if (response.ok) {
+        // Auto-save version on successful plan save
+        await saveVersion();
         setStatus('Saved ✅');
         setTimeout(() => setStatus(''), 2000);
       } else {
@@ -122,56 +123,66 @@ export default function Page() {
     }
   };
 
-  const handleSaveSnapshot = async () => {
+  const saveVersion = async () => {
     try {
-      setStatus('Saving snapshot...');
-      const timestamp = new Date().toISOString();
-      const key = `plan_version_${timestamp}`;
-
-      const snapshotData = {
-        key,
-        timestamp,
-        label: snapshotLabel || 'Snapshot',
+      const versionId = new Date().toISOString();
+      const versionData = {
+        id: versionId,
+        timestamp: versionId,
         data: planData
       };
 
-      const response = await fetch('/api/snapshots', {
+      const response = await fetch('/api/versions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(snapshotData),
+        body: JSON.stringify(versionData),
       });
 
       if (response.ok) {
-        setStatus('Snapshot saved ✅');
-        setSnapshotLabel('');
-        loadSnapshots();
-        setTimeout(() => setStatus(''), 2000);
-      } else {
-        setStatus('Snapshot save failed ❌');
+        loadVersions();
       }
     } catch (error) {
-      console.error('Snapshot save error:', error);
-      setStatus('Snapshot save failed ❌');
+      console.error('Version save error:', error);
     }
   };
 
-  const loadSnapshots = async () => {
+  const loadVersions = async () => {
     try {
-      const response = await fetch('/api/snapshots');
+      const response = await fetch('/api/versions');
       if (response.ok) {
         const data = await response.json();
-        setSnapshots(data.snapshots || []);
+        setVersions(data.versions || []);
       }
     } catch (error) {
-      console.error('Failed to load snapshots:', error);
+      console.error('Failed to load versions:', error);
     }
   };
 
-  const viewSnapshot = (snapshot: Snapshot) => {
-    setPlanData(snapshot.data);
-    setShowSnapshots(false);
-    setStatus(`Viewing snapshot: ${snapshot.label}`);
-    setTimeout(() => setStatus(''), 3000);
+  const restoreVersion = async (version: PlanVersion) => {
+    try {
+      setStatus('Restoring version...');
+      
+      // Update local state
+      setPlanData(version.data);
+      
+      // Save restored version as current plan
+      const response = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(version.data),
+      });
+
+      if (response.ok) {
+        setShowVersions(false);
+        setStatus(`Restored version from ${new Date(version.timestamp).toLocaleString()}`);
+        setTimeout(() => setStatus(''), 3000);
+      } else {
+        setStatus('Restore failed ❌');
+      }
+    } catch (error) {
+      console.error('Restore error:', error);
+      setStatus('Restore failed ❌');
+    }
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -478,8 +489,6 @@ export default function Page() {
 
   const filteredGoals = getFilteredGoals();
 
-  
-
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-4 overflow-x-hidden">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 w-full">
@@ -578,27 +587,12 @@ export default function Page() {
                     </label>
                   )}
 
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      value={snapshotLabel}
-                      onChange={(e) => setSnapshotLabel(e.target.value)}
-                      placeholder="Snapshot label"
-                      className="px-2 py-1 text-sm border border-gray-300 rounded"
-                    />
-                    <button onClick={handleSaveSnapshot} className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                      📸 Save Snapshot
-                    </button>
-                  </div>
-
                   <button 
-                    onClick={() => setShowSnapshots(!showSnapshots)} 
+                    onClick={() => setShowVersions(!showVersions)} 
                     className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                   >
-                    📋 View Snapshots
+                    🕐 Version History ({versions.length})
                   </button>
-
-                  
                 </div>
               </div>
             </div>
@@ -693,26 +687,12 @@ export default function Page() {
               {/* Show controls only in Edit/Progress mode, not Presentation */}
               {mode !== 'presentation' && (
                 <>
-                  {/* Snapshot controls */}
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      type="text"
-                      value={snapshotLabel}
-                      onChange={(e) => setSnapshotLabel(e.target.value)}
-                      placeholder="Snapshot label"
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg min-w-0 flex-1 sm:flex-none sm:w-auto"
-                    />
-                    <button onClick={handleSaveSnapshot} className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
-                      📸 Save Snapshot
-                    </button>
-                    <button 
-                      onClick={() => setShowSnapshots(!showSnapshots)} 
-                      className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
-                    >
-                      📋 View Snapshots
-                    </button>
-                    
-                  </div>
+                  <button 
+                    onClick={() => setShowVersions(!showVersions)} 
+                    className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                  >
+                    🕐 Version History ({versions.length})
+                  </button>
 
                   {isAdmin && (
                     <label className="px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer text-sm">
@@ -751,25 +731,28 @@ export default function Page() {
               </div>
             </div>
 
-            {/* Snapshots Modal */}
-            {showSnapshots && (
+            {/* Version History Modal */}
+            {showVersions && (
               <div className="mb-6 bg-gray-50 rounded-lg p-4 border">
-                <h3 className="text-lg font-semibold mb-3">📋 Saved Snapshots</h3>
-                {snapshots.length === 0 ? (
-                  <p className="text-gray-500">No snapshots saved yet</p>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">🕐 Version History</h3>
+                  <span className="text-sm text-gray-500">Auto-saved on plan changes</span>
+                </div>
+                {versions.length === 0 ? (
+                  <p className="text-gray-500">No versions saved yet. Versions are created automatically when you save the plan.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {snapshots.map((snapshot) => (
-                      <div key={snapshot.key} className="flex items-center justify-between bg-white p-3 rounded border">
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {versions.map((version) => (
+                      <div key={version.id} className="flex items-center justify-between bg-white p-3 rounded border">
                         <div>
-                          <div className="font-medium">{snapshot.label}</div>
-                          <div className="text-sm text-gray-500">{new Date(snapshot.timestamp).toLocaleString()}</div>
+                          <div className="font-medium text-sm">Version {new Date(version.timestamp).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(version.timestamp).toLocaleString()}</div>
                         </div>
                         <button
-                          onClick={() => viewSnapshot(snapshot)}
+                          onClick={() => restoreVersion(version)}
                           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                         >
-                          View
+                          Restore
                         </button>
                       </div>
                     ))}
