@@ -926,62 +926,216 @@ export default function Page() {
 
         {mode === 'progress' ? (
           <div className="space-y-4 sm:space-y-6 pb-16 sm:pb-0">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">📈 Weekly Progress by Team Member</h2>
-            {Object.entries(getProgressItems()).map(([memberName, items]) => (
-              <div key={memberName} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2 break-words">
-                  👤 {memberName}
-                  <span className="text-xs sm:text-sm font-normal text-gray-500">({items.length} items)</span>
-                </h3>
+            {/* Header with Download Report Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">📈 Weekly Progress by Team Member</h2>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    const date = new Date().toISOString().split('T')[0];
+                    const filename = `weekly-progress-${date}.html`;
+                    
+                    const progressItems = getProgressItems();
+                    let htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Weekly Progress Report - ${date}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .member-section { margin-bottom: 25px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; }
+        .member-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .progress-bar { width: 100%; height: 20px; background-color: #f0f0f0; border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .progress-fill { height: 100%; transition: width 0.3s ease; }
+        .item { padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .completed { background-color: #d4edda; color: #155724; }
+        .overdue { background-color: #f8d7da; color: #721c24; }
+        .due-soon { background-color: #fff3cd; color: #856404; }
+        .other { background-color: #f8f9fa; color: #495057; }
+        .stats { display: flex; gap: 15px; margin-bottom: 15px; }
+        .stat-card { padding: 10px; border-radius: 5px; text-align: center; flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📈 Weekly Progress Report</h1>
+        <p><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
+        ${planData.vision ? `<p><strong>Vision:</strong> ${planData.vision}</p>` : ''}
+        ${planData.mission ? `<p><strong>Mission:</strong> ${planData.mission}</p>` : ''}
+    </div>`;
 
-                {items.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No assigned items</p>
-                ) : (
-                  <div className="space-y-3">
-                    {items.map((entry, index) => (
-                      <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item)}`}>
-                        <span className="text-xl">{getStatusIcon(entry.item)}</span>
+                    Object.entries(progressItems).forEach(([memberName, items]) => {
+                      const completed = items.filter(item => item.item.archived).length;
+                      const overdue = items.filter(item => !item.item.archived && item.item.dueDate && isOverdue(item.item.dueDate)).length;
+                      const dueThisWeek = items.filter(item => !item.item.archived && item.item.dueDate && isDueThisWeek(item.item.dueDate)).length;
+                      const completionPercentage = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
 
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium uppercase tracking-wide opacity-75">
-                              {entry.type}
-                            </span>
-                            <span className="text-xs text-gray-600">from "{entry.goalName}"</span>
+                      htmlContent += `
+    <div class="member-section">
+        <div class="member-name">👤 ${memberName}</div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${completionPercentage}%; background-color: ${completionPercentage >= 80 ? '#28a745' : completionPercentage >= 50 ? '#ffc107' : '#dc3545'};"></div>
+        </div>
+        <div class="stats">
+            <div class="stat-card completed">✅ ${completed} Completed</div>
+            <div class="stat-card overdue">⚠️ ${overdue} Overdue</div>
+            <div class="stat-card due-soon">📅 ${dueThisWeek} Due This Week</div>
+        </div>`;
+
+                      items.forEach(entry => {
+                        const statusClass = entry.item.archived ? 'completed' : 
+                                          isOverdue(entry.item.dueDate) && !entry.item.archived ? 'overdue' :
+                                          isDueThisWeek(entry.item.dueDate) && !entry.item.archived ? 'due-soon' : 'other';
+                        const icon = getStatusIcon(entry.item);
+                        
+                        htmlContent += `
+        <div class="item ${statusClass}">
+            <strong>${icon} ${entry.type.toUpperCase()}</strong> from "${entry.goalName}"<br>
+            ${entry.item.text || 'Untitled item'}
+            ${entry.item.dueDate ? `<br><small>📅 Due: ${entry.item.dueDate}</small>` : ''}
+        </div>`;
+                      });
+
+                      htmlContent += `    </div>`;
+                    });
+
+                    htmlContent += `
+</body>
+</html>`;
+
+                    const blob = new Blob([htmlContent], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    setStatus(`📥 Weekly report downloaded: ${filename}`);
+                    setTimeout(() => setStatus(''), 3000);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2"
+                >
+                  📥 Download Weekly Report
+                </button>
+              )}
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="bg-white rounded-lg shadow-sm p-4 border">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Weekly Summary</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                {(() => {
+                  const allItems = Object.values(getProgressItems()).flat();
+                  const completed = allItems.filter(item => item.item.archived).length;
+                  const overdue = allItems.filter(item => !item.item.archived && item.item.dueDate && isOverdue(item.item.dueDate)).length;
+                  const dueThisWeek = allItems.filter(item => !item.item.archived && item.item.dueDate && isDueThisWeek(item.item.dueDate)).length;
+                  const total = allItems.length;
+
+                  return (
+                    <>
+                      <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                        <div className="text-xl font-bold text-green-600">✅ {completed}</div>
+                        <div className="text-green-700 text-xs">Completed</div>
+                      </div>
+                      <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+                        <div className="text-xl font-bold text-red-600">⚠️ {overdue}</div>
+                        <div className="text-red-700 text-xs">Overdue</div>
+                      </div>
+                      <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+                        <div className="text-xl font-bold text-yellow-600">📅 {dueThisWeek}</div>
+                        <div className="text-yellow-700 text-xs">Due This Week</div>
+                      </div>
+                      <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                        <div className="text-xl font-bold text-blue-600">📋 {total}</div>
+                        <div className="text-blue-700 text-xs">Total Items</div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Team Member Progress */}
+            {Object.entries(getProgressItems()).map(([memberName, items]) => {
+              const completed = items.filter(item => item.item.archived).length;
+              const completionPercentage = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+              
+              return (
+                <div key={memberName} className="bg-white rounded-lg shadow-sm border p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex items-center gap-2 break-words">
+                      👤 {memberName}
+                      <span className="text-xs sm:text-sm font-normal text-gray-500">({items.length} items)</span>
+                    </h3>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600">{completionPercentage}%</div>
+                      <div className="text-xs text-blue-700">Complete</div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        completionPercentage >= 80 ? 'bg-green-500' : 
+                        completionPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${completionPercentage}%` }}
+                    ></div>
+                  </div>
+
+                  {items.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No assigned items</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {items.map((entry, index) => (
+                        <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item)}`}>
+                          <span className="text-xl">{getStatusIcon(entry.item)}</span>
+
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium uppercase tracking-wide opacity-75">
+                                {entry.type}
+                              </span>
+                              <span className="text-xs text-gray-600">from "{entry.goalName}"</span>
+                            </div>
+
+                            <p className={`text-sm ${entry.item.archived ? 'line-through opacity-60' : ''}`}>
+                              {entry.item.text || 'Untitled item'}
+                            </p>
+
+                            {entry.item.dueDate && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs bg-white/50 px-2 py-1 rounded">
+                                  📅 Due: {entry.item.dueDate}
+                                </span>
+                                {isOverdue(entry.item.dueDate) && !entry.item.archived && (
+                                  <span className="text-xs text-red-600 font-medium">OVERDUE</span>
+                                )}
+                                {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
+                                  <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
-                          <p className={`text-sm ${entry.item.archived ? 'line-through opacity-60' : ''}`}>
-                            {entry.item.text || 'Untitled item'}
-                          </p>
-
-                          {entry.item.dueDate && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs bg-white/50 px-2 py-1 rounded">
-                                📅 Due: {entry.item.dueDate}
-                              </span>
-                              {isOverdue(entry.item.dueDate) && !entry.item.archived && (
-                                <span className="text-xs text-red-600 font-medium">OVERDUE</span>
-                              )}
-                              {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
-                                <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
-                              )}
-                            </div>
-                          )}
+                          <div className="text-right">
+                            {entry.item.archived ? (
+                              <span className="text-xs text-green-600 font-medium">COMPLETED</span>
+                            ) : (
+                              <span className="text-xs text-gray-500">In Progress</span>
+                            )}
+                          </div>
                         </div>
-
-                        <div className="text-right">
-                          {entry.item.archived ? (
-                            <span className="text-xs text-green-600 font-medium">COMPLETED</span>
-                          ) : (
-                            <span className="text-xs text-gray-500">In Progress</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {planData.teamMembers.length === 0 && (
               <div className="text-center py-12 text-gray-500">
