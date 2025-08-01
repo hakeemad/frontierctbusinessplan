@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Database from '@replit/database'
 
 const db = new Database()
-const MAX_VERSIONS = 15
+const MAX_VERSIONS = 50
 
 export async function GET() {
   try {
@@ -58,6 +58,13 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/versions - Saving version...')
     const versionData = await request.json()
 
+    // Ensure version has required fields
+    if (!versionData.id || !versionData.timestamp || !versionData.data) {
+      return NextResponse.json({ 
+        error: 'Invalid version data - missing required fields' 
+      }, { status: 400 })
+    }
+
     // Clean up old versions if we exceed the limit
     const keys = await db.list('plan_version_')
     if (keys && Array.isArray(keys) && keys.length >= MAX_VERSIONS) {
@@ -98,9 +105,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save new version
+    // Save new version with label support
+    const versionToSave = {
+      id: versionData.id,
+      timestamp: versionData.timestamp,
+      label: versionData.label || 'Auto-save',
+      data: versionData.data
+    }
+    
     const versionKey = `plan_version_${versionData.id}`
-    const result = await db.set(versionKey, JSON.stringify(versionData))
+    const result = await db.set(versionKey, JSON.stringify(versionToSave))
     console.log('Version save result:', result)
 
     return NextResponse.json({ success: true })

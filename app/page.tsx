@@ -103,6 +103,9 @@ export default function Page() {
       console.log('Saving plan data to /api/plan...');
       console.log('Sending plan data:', planData);
 
+      // Check if content has changed by comparing with last saved version
+      const hasChanged = await checkForChanges();
+      
       const response = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,9 +113,13 @@ export default function Page() {
       });
 
       if (response.ok) {
-        // Auto-save version on successful plan save
-        await saveVersion();
-        setStatus('Saved ✅');
+        // Auto-save version only if content has changed
+        if (hasChanged) {
+          await saveVersion('Auto-save');
+          setStatus('Saved with new version ✅');
+        } else {
+          setStatus('Saved (no changes) ✅');
+        }
         setTimeout(() => setStatus(''), 2000);
       } else {
         setStatus('Save failed ❌');
@@ -123,12 +130,35 @@ export default function Page() {
     }
   };
 
-  const saveVersion = async () => {
+  const checkForChanges = async () => {
+    try {
+      const response = await fetch('/api/versions');
+      if (response.ok) {
+        const data = await response.json();
+        const latestVersion = data.versions?.[0];
+        
+        if (!latestVersion) return true; // No previous version, so this is a change
+        
+        // Simple content comparison - stringify and compare
+        const currentContent = JSON.stringify(planData);
+        const previousContent = JSON.stringify(latestVersion.data);
+        
+        return currentContent !== previousContent;
+      }
+      return true; // If we can't check, assume there are changes
+    } catch (error) {
+      console.error('Error checking for changes:', error);
+      return true; // If we can't check, assume there are changes
+    }
+  };
+
+  const saveVersion = async (label = 'Manual save') => {
     try {
       const versionId = new Date().toISOString();
       const versionData = {
         id: versionId,
         timestamp: versionId,
+        label: label,
         data: planData
       };
 
@@ -735,24 +765,34 @@ export default function Page() {
             {showVersions && (
               <div className="mb-6 bg-gray-50 rounded-lg p-4 border">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">🕐 Version History</h3>
+                  <h3 className="text-lg font-semibold">🕐 Version History ({versions.length})</h3>
                   <span className="text-sm text-gray-500">Auto-saved on plan changes</span>
                 </div>
                 {versions.length === 0 ? (
                   <p className="text-gray-500">No versions saved yet. Versions are created automatically when you save the plan.</p>
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {versions.map((version) => (
+                    {versions.map((version, index) => (
                       <div key={version.id} className="flex items-center justify-between bg-white p-3 rounded border">
-                        <div>
-                          <div className="font-medium text-sm">Version {new Date(version.timestamp).toLocaleDateString()}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-medium text-sm">
+                              {version.label || 'Auto-save'} 
+                              {index === 0 && <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded ml-2">Latest</span>}
+                            </div>
+                          </div>
                           <div className="text-xs text-gray-500">{new Date(version.timestamp).toLocaleString()}</div>
                         </div>
                         <button
-                          onClick={() => restoreVersion(version)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to restore the version from ${new Date(version.timestamp).toLocaleString()}? This will replace your current plan.`)) {
+                              restoreVersion(version);
+                            }
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400"
+                          disabled={index === 0}
                         >
-                          Restore
+                          {index === 0 ? 'Current' : 'Restore'}
                         </button>
                       </div>
                     ))}
