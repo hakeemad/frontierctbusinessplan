@@ -392,9 +392,7 @@ export default function Page() {
     };
   };
 
-  const progressSummary = getProgressSummary();
-
-  // Helper functions for progress view
+  // Helper functions for progress view - defined early to avoid initialization errors
   const isOverdue = (dueDate: string | undefined) => {
     if (!dueDate) return false;
     const today = new Date();
@@ -409,6 +407,8 @@ export default function Page() {
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     return due >= today && due <= nextWeek;
   };
+
+  const progressSummary = getProgressSummary();
 
   const getProgressItems = () => {
     const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction, goalName: string }> } = {};
