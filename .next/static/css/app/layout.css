@@ -2277,6 +2277,11 @@ body {
   color: rgb(185 28 28 / var(--tw-text-opacity, 1));
 }
 
+.hover\:text-red-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(153 27 27 / var(--tw-text-opacity, 1));
+}
+
 .hover\:text-sidebar-accent-foreground:hover {
   color: hsl(var(--sidebar-accent-foreground));
 }
