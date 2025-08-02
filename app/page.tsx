@@ -272,31 +272,60 @@ export default function Page() {
       const headers = lines[0].split(',').map(h => h.trim());
       console.log('CSV Headers:', headers);
 
+      // Check if we have the expected headers
+      const hasHeaderFormat = headers.some(h => 
+        h.toLowerCase().includes('title') || 
+        h.toLowerCase().includes('measures') || 
+        h.toLowerCase().includes('strategy') || 
+        h.toLowerCase().includes('actions')
+      );
+
       const newGoals: Goal[] = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length < 1 || !values[0]) continue;
+      if (hasHeaderFormat) {
+        // Use header-based parsing
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          if (values.length < 1 || !values[0]) continue;
 
-        const goal: Goal = {
-          name: values[0] || `Goal ${i}`,
-          measures: values[1]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
-          strategies: values[2]?.split(";").map(s => s.trim()).filter(Boolean) ?? [],
-          actions: values[3]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
-          owner: ''
-        };
+          // Create row object mapping headers to values
+          const row: { [key: string]: string } = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
 
-        newGoals.push(goal);
+          const goal: Goal = {
+            name: row["Title"] || row["title"] || row["Goal Name"] || row["goal name"] || `Goal ${i}`,
+            measures: row["Measures"]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
+            strategies: row["Strategy"]?.split(";").map(s => s.trim()).filter(Boolean) ?? [],
+            actions: row["Actions"]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
+            owner: ''
+          };
+
+          newGoals.push(goal);
+        }
+      } else {
+        // Fall back to index-based parsing
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          if (values.length < 1 || !values[0]) continue;
+
+          const goal: Goal = {
+            name: values[0] || `Goal ${i}`,
+            measures: values[1]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
+            strategies: values[2]?.split(";").map(s => s.trim()).filter(Boolean) ?? [],
+            actions: values[3]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
+            owner: ''
+          };
+
+          newGoals.push(goal);
+        }
       }
 
       if (newGoals.length > 0) {
         setPlanData(prev => ({ 
           ...prev, 
           goals: newGoals,  // Replace all goals instead of appending
-          // Optionally reset other fields for a complete clean slate
-          // vision: '',
-          // mission: '',
-          // logoUrl: ''
         }));
         setStatus(`✅ Replaced entire plan with ${newGoals.length} goals from CSV`);
         setTimeout(() => setStatus(''), 3000);
