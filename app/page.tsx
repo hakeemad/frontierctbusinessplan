@@ -314,23 +314,58 @@ export default function Page() {
           };
         }
 
-        if (row["Measures"]) {
-          const newMeasures = row["Measures"].split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false }));
+        // Parse Measures field
+        if (row["Measures"] && row["Measures"].toLowerCase() !== 'nan' && row["Measures"].trim() !== '') {
+          const measuresText = row["Measures"].trim();
+          console.log(`Processing measures for "${goalName}":`, measuresText);
+          const newMeasures = measuresText.split(',').map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false }));
+          console.log(`Added ${newMeasures.length} measures:`, newMeasures.map(m => m.text));
           goalMap[goalName].measures.push(...newMeasures);
         }
 
-        if (row["Strategy"]) {
-          const newStrategies = row["Strategy"].split(";").map(s => s.trim()).filter(Boolean);
+        // Parse Strategies field (updated to match Measures/Actions pattern)
+        if (row["Strategy"] && row["Strategy"].toLowerCase() !== 'nan' && row["Strategy"].trim() !== '') {
+          const strategiesText = row["Strategy"].trim();
+          console.log(`Processing strategies for "${goalName}":`, strategiesText);
+          const newStrategies = strategiesText.split(',').map(s => s.trim()).filter(Boolean);
+          console.log(`Added ${newStrategies.length} strategies:`, newStrategies);
           goalMap[goalName].strategies.push(...newStrategies);
         }
 
-        if (row["Actions"]) {
-          const newActions = row["Actions"].split(";").map(a => a.trim()).filter(Boolean).map(text => ({
+        // Also check for "Strategies" field (plural form)
+        if (row["Strategies"] && row["Strategies"].toLowerCase() !== 'nan' && row["Strategies"].trim() !== '') {
+          const strategiesText = row["Strategies"].trim();
+          console.log(`Processing strategies (plural) for "${goalName}":`, strategiesText);
+          const newStrategies = strategiesText.split(',').map(s => s.trim()).filter(Boolean);
+          console.log(`Added ${newStrategies.length} strategies from plural field:`, newStrategies);
+          goalMap[goalName].strategies.push(...newStrategies);
+        }
+
+        // Parse Actions field
+        if (row["Actions"] && row["Actions"].toLowerCase() !== 'nan' && row["Actions"].trim() !== '') {
+          const actionsText = row["Actions"].trim();
+          console.log(`Processing actions for "${goalName}":`, actionsText);
+          const newActions = actionsText.split(',').map(a => a.trim()).filter(Boolean).map(text => ({
             text,
             archived: false,
             status: 'not_started',
             notes: ''
           }));
+          console.log(`Added ${newActions.length} actions:`, newActions.map(a => a.text));
+          goalMap[goalName].actions.push(...newActions);
+        }
+
+        // Also check for "Action" field (singular form)
+        if (row["Action"] && row["Action"].toLowerCase() !== 'nan' && row["Action"].trim() !== '') {
+          const actionsText = row["Action"].trim();
+          console.log(`Processing actions (singular) for "${goalName}":`, actionsText);
+          const newActions = actionsText.split(',').map(a => a.trim()).filter(Boolean).map(text => ({
+            text,
+            archived: false,
+            status: 'not_started',
+            notes: ''
+          }));
+          console.log(`Added ${newActions.length} actions from singular field:`, newActions.map(a => a.text));
           goalMap[goalName].actions.push(...newActions);
         }
       }
