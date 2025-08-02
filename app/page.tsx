@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +8,8 @@ interface MeasureAction {
   dueDate?: string;
   assignee?: string;
   archived: boolean;
+  status?: string;
+  notes?: string;
 }
 
 interface Goal {
@@ -30,6 +33,13 @@ interface PlanVersion {
   timestamp: string;
   data: PlanData;
 }
+
+const progressOptions = [
+  { value: 'not_started', label: 'Not Started' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'blocked', label: 'Blocked' },
+  { value: 'completed', label: 'Completed' }
+];
 
 export default function Page() {
   const [planData, setPlanData] = useState<PlanData>({
@@ -76,7 +86,9 @@ export default function Page() {
               text: a.text || '',
               dueDate: a.dueDate || undefined,
               assignee: a.assignee || undefined,
-              archived: Boolean(a.archived)
+              archived: Boolean(a.archived),
+              status: a.status || 'not_started',
+              notes: a.notes || ''
             })) : [],
             owner: goal.owner || goal.sponsor || goal.assignedTeam?.[0] || goal.assignees?.[0] || ''
           }));
@@ -269,7 +281,7 @@ export default function Page() {
           name: values[0] || `Goal ${i}`,
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
           measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
-          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false })).filter(a => a.text) : [],
+          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false, status: 'not_started', notes: '' })).filter(a => a.text) : [],
           owner: values[4] ? values[4].trim() : ''
         };
 
@@ -350,7 +362,7 @@ export default function Page() {
       goals: prev.goals.map((goal, i) => 
         i === goalIndex ? {
           ...goal,
-          [type]: [...goal[type], { text: '', archived: false }]
+          [type]: [...goal[type], type === 'actions' ? { text: '', archived: false, status: 'not_started', notes: '' } : { text: '', archived: false }]
         } : goal
       )
     }));
@@ -484,6 +496,27 @@ export default function Page() {
     if (isOverdue(item.dueDate)) return 'text-red-600 bg-red-50';
     if (isDueThisWeek(item.dueDate)) return 'text-yellow-600 bg-yellow-50';
     return 'text-gray-600 bg-gray-50';
+  };
+
+  const getProgressStatusBadge = (status: string) => {
+    const option = progressOptions.find(opt => opt.value === status);
+    const label = option?.label || 'Not Started';
+    
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'blocked':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const truncateText = (text: string, maxLength: number = 100) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   // Filter functions
@@ -948,6 +981,8 @@ export default function Page() {
             <strong>${icon} ${entry.type.toUpperCase()}</strong> from "${entry.goalName}"<br>
             ${entry.item.text || 'Untitled item'}
             ${entry.item.dueDate ? `<br><small>📅 Due: ${entry.item.dueDate}</small>` : ''}
+            ${entry.type === 'action' && entry.item.status ? `<br><small>Status: ${progressOptions.find(opt => opt.value === entry.item.status)?.label || entry.item.status}</small>` : ''}
+            ${entry.type === 'action' && entry.item.notes ? `<br><small>Notes: ${entry.item.notes}</small>` : ''}
         </div>`;
                       });
 
@@ -1056,6 +1091,11 @@ export default function Page() {
                                 {entry.type}
                               </span>
                               <span className="text-xs text-gray-600">from "{entry.goalName}"</span>
+                              {entry.type === 'action' && entry.item.status && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${getProgressStatusBadge(entry.item.status)}`}>
+                                  {progressOptions.find(opt => opt.value === entry.item.status)?.label || entry.item.status}
+                                </span>
+                              )}
                             </div>
 
                             <p className={`text-sm ${entry.item.archived ? 'line-through opacity-60' : ''}`}>
@@ -1073,6 +1113,12 @@ export default function Page() {
                                 {isDueThisWeek(entry.item.dueDate) && !entry.item.archived && (
                                   <span className="text-xs text-yellow-600 font-medium">DUE THIS WEEK</span>
                                 )}
+                              </div>
+                            )}
+
+                            {entry.type === 'action' && entry.item.notes && (
+                              <div className="mt-2 text-xs text-gray-600 bg-white/50 p-2 rounded">
+                                📝 {entry.item.notes}
                               </div>
                             )}
                           </div>
@@ -1371,16 +1417,52 @@ export default function Page() {
                                 ))}
                               </select>
                             </div>
+                            {/* Progress Status Dropdown - Actions Only */}
+                            <select
+                              value={action.status || 'not_started'}
+                              onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'status', e.target.value)}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1"
+                            >
+                              {progressOptions.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                            {/* Notes Field - Actions Only */}
+                            <textarea
+                              value={action.notes || ''}
+                              onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'notes', e.target.value)}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 h-16 resize-none"
+                              placeholder="Notes..."
+                            />
                           </div>
                         ) : (
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 relative group">
                             <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
                               {action.text}
                             </span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {action.dueDate}</span>}
                               {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {action.assignee}</span>}
+                              {/* Progress Status Badge - Actions Only */}
+                              {action.status && (
+                                <span className={`text-xs px-2 py-1 rounded-full ${getProgressStatusBadge(action.status)}`}>
+                                  {progressOptions.find(opt => opt.value === action.status)?.label || action.status}
+                                </span>
+                              )}
+                              {/* Notes Icon - Actions Only */}
+                              {action.notes && (
+                                <span className="text-xs bg-gray-100 text-gray-600 px-1 rounded cursor-help" title={action.notes}>
+                                  📝 {action.notes.length > 20 ? 'Note...' : action.notes}
+                                </span>
+                              )}
                             </div>
+                            {/* Tooltip for notes on hover - Actions Only */}
+                            {action.notes && (
+                              <div className="absolute bottom-full left-0 mb-2 p-2 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 max-w-xs">
+                                <div className="font-semibold">Progress: {progressOptions.find(opt => opt.value === action.status)?.label || action.status}</div>
+                                <div className="mt-1">Notes: {truncateText(action.notes, 100)}</div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

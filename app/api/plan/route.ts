@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
             text: a.text || '',
             dueDate: a.dueDate || undefined,
             assignee: a.assignee || undefined,
-            archived: Boolean(a.archived)
+            archived: Boolean(a.archived),
+            status: a.status || 'not_started',
+            notes: a.notes || ''
           })) : []
 
           goal.strategies = Array.isArray(goal.strategies) ? goal.strategies : []
