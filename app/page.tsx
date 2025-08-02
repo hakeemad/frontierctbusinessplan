@@ -636,13 +636,13 @@ export default function Page() {
                     {planData.vision && (
                       <p className="bg-blue-50 p-3 rounded-lg">
                         <span className="font-bold text-blue-800">Vision:</span> 
-                        <span className="ml-2 font-bold">{planData.vision}</span>
+                        <span className="ml-2 font-bold text-gray-900">{planData.vision}</span>
                       </p>
                     )}
                     {planData.mission && (
                       <p className="bg-green-50 p-3 rounded-lg">
                         <span className="font-bold text-green-800">Mission:</span> 
-                        <span className="ml-2 font-bold">{planData.mission}</span>
+                        <span className="ml-2 font-bold text-gray-900">{planData.mission}</span>
                       </p>
                     )}
                   </div>
@@ -718,8 +718,8 @@ export default function Page() {
                 {/* Vision and Mission as subtle subtitles */}
                 {(planData.vision || planData.mission) && (
                   <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600 space-y-1">
-                    {planData.vision && <p className="break-words"><span className="font-bold">Vision:</span> <span className="font-bold">{planData.vision}</span></p>}
-                    {planData.mission && <p className="break-words"><span className="font-bold">Mission:</span> <span className="font-bold">{planData.mission}</span></p>}
+                    {planData.vision && <p className="break-words"><span className="font-bold text-gray-800">Vision:</span> <span className="font-bold text-gray-800">{planData.vision}</span></p>}
+                    {planData.mission && <p className="break-words"><span className="font-bold text-gray-800">Mission:</span> <span className="font-bold text-gray-800">{planData.mission}</span></p>}
                   </div>
                 )}
             </div>
