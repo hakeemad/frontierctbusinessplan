@@ -132,9 +132,7 @@ export async function POST(request: NextRequest) {
             text: m.text || '',
             dueDate: m.dueDate || undefined,
             assignee: m.assignee || undefined,
-            archived: Boolean(m.archived),
-            status: m.status || 'Not Started',
-            notes: m.notes || ''
+            archived: Boolean(m.archived)
           })) : []
 
           goal.actions = Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({

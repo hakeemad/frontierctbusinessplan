@@ -1,3 +1,6 @@
+Removing status and notes from MeasureAction and updating related logic to keep them only for Actions.
+```
+```replit_final_file
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,7 +17,7 @@ interface MeasureAction {
 interface Goal {
   name: string;
   strategies: string[];
-  measures: MeasureAction[];
+  measures: Omit<MeasureAction, 'status' | 'notes'>[];
   actions: MeasureAction[];
   owner: string;
 }
@@ -74,9 +77,7 @@ export default function Page() {
               text: m.text || '',
               dueDate: m.dueDate || undefined,
               assignee: m.assignee || undefined,
-              archived: Boolean(m.archived),
-              status: m.status || 'Not Started',
-              notes: m.notes || ''
+              archived: Boolean(m.archived)
             })) : [],
             actions: Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
               text: a.text || '',
@@ -276,7 +277,7 @@ export default function Page() {
         const goal: Goal = {
           name: values[0] || `Goal ${i}`,
           strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
-          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false, status: 'Not Started' as const, notes: '' })).filter(m => m.text) : [],
+          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
           actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false, status: 'Not Started' as const, notes: '' })).filter(a => a.text) : [],
           owner: values[4] ? values[4].trim() : ''
         };
@@ -470,7 +471,7 @@ export default function Page() {
   const progressSummary = getProgressSummary();
 
   const getProgressItems = () => {
-    const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction, goalName: string }> } = {};
+    const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction | Omit<MeasureAction, 'status' | 'notes'>, goalName: string }> } = {};
 
     planData.teamMembers.forEach(member => {
       if (member.trim()) {
@@ -487,7 +488,7 @@ export default function Page() {
 
       goal.measures.forEach(measure => {
         if (measure.assignee && measure.assignee.trim() && items[measure.assignee]) {
-          items[measure.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
+          items[action.assignee].push({ type: 'measure', item: measure, goalName: goal.name || 'Untitled Goal' });
         }
       });
     });
@@ -1065,7 +1066,7 @@ export default function Page() {
                   ) : (
                     <div className="space-y-3">
                       {items.map((entry, index) => (
-                        <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item)}`}>
+                        <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${getStatusColor(entry.item.status)}`}>
                           <span className="text-xl">{getStatusIcon(entry.item)}</span>
 
                           <div className="flex-1">
@@ -1312,24 +1313,6 @@ export default function Page() {
                                 ))}
                               </select>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-                              <select
-                                value={measure.status || 'Not Started'}
-                                onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'status', e.target.value)}
-                                className="text-xs border border-gray-200 rounded px-1 py-0.5 flex-1"
-                              >
-                                <option value="Not Started">Not Started</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Done">Done</option>
-                                <option value="Blocked">Blocked</option>
-                              </select>
-                            </div>
-                            <textarea
-                              value={measure.notes || ''}
-                              onChange={e => updateMeasureAction(goalIndex, 'measures', i, 'notes', e.target.value)}
-                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 h-12 resize-none"
-                              placeholder="Notes (optional)"
-                            />
                           </div>
                         ) : (
                           <div className="flex-1 min-w-0">
@@ -1337,22 +1320,8 @@ export default function Page() {
                               {measure.text}
                             </span>
                             <div className="flex flex-wrap gap-1 mt-1 items-center">
-                              {measure.status && (
-                                <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(measure.status)}`}>
-                                  {measure.status}
-                                </span>
-                              )}
                               {measure.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {measure.dueDate}</span>}
                               {measure.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {measure.assignee}</span>}
-                              {measure.notes && (
-                                <button
-                                  onClick={() => showNoteInModal(`Measure: ${measure.text}`, measure.notes || '')}
-                                  className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer"
-                                  title="View notes"
-                                >
-                                  📝
-                                </button>
-                              )}
                             </div>
                           </div>
                         )}
@@ -1450,112 +1419,4 @@ export default function Page() {
                             <textarea
                               value={action.notes || ''}
                               onChange={e => updateMeasureAction(goalIndex, 'actions', i, 'notes', e.target.value)}
-                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 h-12 resize-none"
-                              placeholder="Notes (optional)"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex-1 min-w-0">
-                            <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
-                              {action.text}
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1 items-center">
-                              {action.status && (
-                                <span className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(action.status)}`}>
-                                  {action.status}
-                                </span>
-                              )}
-                              {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {action.dueDate}</span>}
-                              {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {action.assignee}</span>}
-                              {action.notes && (
-                                <button
-                                  onClick={() => showNoteInModal(`Action: ${action.text}`, action.notes || '')}
-                                  className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer"
-                                  title="View notes"
-                                >
-                                  📝
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {mode === 'edit' && (
-                      <button
-                        onClick={() => addMeasureAction(goalIndex, 'actions')}
-                        className="text-xs text-blue-600 hover:text-blue-800"
-                      >
-                        + Add Action
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-
-              </div>
-            </div>
-          ))}
-
-              {/* Show message if no goals match filters */}
-              {filteredGoals.every(goal => goal.measures.length === 0 && goal.actions.length === 0) && 
-               (filters.assignee || filters.status !== 'all' || filters.dueStatus !== 'all') && (
-                <div className="col-span-full text-center py-8 text-gray-500">
-                  <p>No items match the current filters.</p>
-                  <button
-                    onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all' })}
-                    className="text-blue-600 hover:text-blue-800 text-sm mt-2"
-                  >
-                    Clear filters to see all items
-                  </button>
-                </div>
-              )}
-
-          {mode === 'edit' && (
-            <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 flex items-center justify-center">
-              <button
-                onClick={addGoal}
-                className="text-gray-600 hover:text-gray-800 text-center"
-              >
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">+</div>
-                <div className="text-xs sm:text-sm">Add New Goal</div>
-              </button>
-            </div>
-          )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Notes Modal */}
-      {showNoteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-80">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-800 truncate">{selectedNote.title}</h3>
-              <button
-                onClick={() => setShowNoteModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4 max-h-60 overflow-y-auto">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                {selectedNote.content || 'No notes available.'}
-              </p>
-            </div>
-            <div className="flex justify-end p-4 border-t">
-              <button
-                onClick={() => setShowNoteModal(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
-  );
-}
+                              className="w-full text-xs border border-gray-200 rounded px-2
