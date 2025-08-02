@@ -703,61 +703,180 @@ export default function Page() {
           </div>
         )}
 
-        {/* Regular Header for Edit Mode */}
-        {mode !== 'presentation' && (
-          <>
-            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
-                {/* Header with logo and title in horizontal row */}
-                <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
-                  {planData.logoUrl && (
-                    <img src={planData.logoUrl} alt="Logo" className="w-12 sm:w-20 h-auto rounded flex-shrink-0" />
-                  )}
-                  <h1 className="text-lg sm:text-3xl font-bold text-gray-900 min-w-0">🌍 Strategic Business Plan</h1>
+        {/* Plan Overview for Edit Mode (replaces regular header) */}
+        {mode === 'edit' && (
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
+            {!showCoreEditor ? (
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">📋 Plan Overview</h3>
+                  <button
+                    onClick={() => setShowCoreEditor(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  >
+                    ✏️ Edit Details
+                  </button>
                 </div>
-
-                {/* Vision and Mission as subtle subtitles */}
-                {(planData.vision || planData.mission) && (
-                  <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600 space-y-1">
-                    {planData.vision && <p className="break-words"><span className="font-bold text-gray-800">Vision:</span> <span className="font-bold text-gray-800">{planData.vision}</span></p>}
-                    {planData.mission && <p className="break-words"><span className="font-bold text-gray-800">Mission:</span> <span className="font-bold text-gray-800">{planData.mission}</span></p>}
+                
+                <div className="space-y-3">
+                  {/* Logo Preview */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-700 w-20">Logo:</span>
+                    {planData.logoUrl ? (
+                      <img src={planData.logoUrl} alt="Logo" className="w-12 h-12 rounded object-cover" />
+                    ) : (
+                      <span className="text-sm text-gray-500">No logo uploaded</span>
+                    )}
                   </div>
-                )}
-            </div>
 
-            {/* Progress Summary Bar */}
-            <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-3 sm:p-4">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">📊 Plan Progress Summary</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 text-xs sm:text-sm">
-                <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
-                  <div className="text-green-700">Actions Complete</div>
-                </div>
+                  {/* Vision Preview */}
+                  <div className="flex items-start gap-3">
+                    <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Vision:</span>
+                    <span className="text-sm text-gray-600 font-bold">
+                      {planData.vision || "No vision statement"}
+                    </span>
+                  </div>
 
-                <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
-                  <div className="text-blue-700">Measures Complete</div>
-                </div>
+                  {/* Mission Preview */}
+                  <div className="flex items-start gap-3">
+                    <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Mission:</span>
+                    <span className="text-sm text-gray-600 font-bold">
+                      {planData.mission || "No mission statement"}
+                    </span>
+                  </div>
 
-                <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
-                  <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
-                  <div className="text-purple-700">Goals Fully Complete</div>
-                </div>
-
-                <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
-                  <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
-                  <div className="text-red-700">Overdue Items</div>
-                </div>
-
-                <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
-                  <div className="text-lg font-bold text-yellow-600">⏳</div>
-                  <div className="text-yellow-700">Next Due</div>
-                  <div className="text-xs mt-1 font-medium">
-                    {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+                  {/* Team Members Preview */}
+                  <div className="flex items-start gap-3">
+                    <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Team:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {planData.teamMembers.length > 0 ? (
+                        planData.teamMembers.filter(Boolean).map((member, i) => (
+                          <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            👤 {member}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-gray-500">No team members</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">✏️ Edit Plan Details</h3>
+                  <button
+                    onClick={() => setShowCoreEditor(false)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  >
+                    ✅ Done
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
+                    <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
+                      📷 Choose Logo File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-20 h-auto rounded" />}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
+                    <textarea
+                      value={planData.vision}
+                      onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                      placeholder="Our vision..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
+                    <textarea
+                      value={planData.mission}
+                      onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                      placeholder="Our mission..."
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">👥 Team Members</label>
+                  <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
+                    {planData.teamMembers.map((member, i) => (
+                      <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
+                        <input
+                          type="text"
+                          value={member}
+                          onChange={e => updateTeamMember(i, e.target.value)}
+                          className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
+                          placeholder="Name"
+                        />
+                        <button
+                          onClick={() => removeTeamMember(i)}
+                          className="text-red-500 hover:text-red-700 text-xs ml-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={addTeamMember}
+                      className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
+                    >
+                      + Add Member
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Progress Summary for Edit Mode */}
+        {mode === 'edit' && (
+          <div className="bg-white rounded-lg shadow-sm border-l-4 border-blue-500 p-3 sm:p-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">📊 Plan Progress Summary</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 text-xs sm:text-sm">
+              <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                <div className="text-2xl font-bold text-green-600">✅ {progressSummary.actionsCompletionRate}%</div>
+                <div className="text-green-700">Actions Complete</div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">📊 {progressSummary.measuresCompletionRate}%</div>
+                <div className="text-blue-700">Measures Complete</div>
+              </div>
+
+              <div className="bg-purple-50 rounded-lg p-3 text-center border border-purple-200">
+                <div className="text-2xl font-bold text-purple-600">🎯 {progressSummary.goalsWithAllActionsComplete}</div>
+                <div className="text-purple-700">Goals Fully Complete</div>
+              </div>
+
+              <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
+                <div className="text-2xl font-bold text-red-600">⚠️ {progressSummary.overdueItems}</div>
+                <div className="text-red-700">Overdue Items</div>
+              </div>
+
+              <div className="bg-yellow-50 rounded-lg p-3 text-center border border-yellow-200">
+                <div className="text-lg font-bold text-yellow-600">⏳</div>
+                <div className="text-yellow-700">Next Due</div>
+                <div className="text-xs mt-1 font-medium">
+                  {progressSummary.nextDueDate ? progressSummary.nextDueDate : 'None'}
+                </div>
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
@@ -925,144 +1044,7 @@ export default function Page() {
 
             {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
 
-            {mode === 'edit' && (
-              <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-16">
-                {!showCoreEditor ? (
-                  <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">📋 Plan Overview</h3>
-                      <button
-                        onClick={() => setShowCoreEditor(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                      >
-                        ✏️ Edit Details
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {/* Logo Preview */}
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-700 w-20">Logo:</span>
-                        {planData.logoUrl ? (
-                          <img src={planData.logoUrl} alt="Logo" className="w-12 h-12 rounded object-cover" />
-                        ) : (
-                          <span className="text-sm text-gray-500">No logo uploaded</span>
-                        )}
-                      </div>
-
-                      {/* Vision Preview */}
-                      <div className="flex items-start gap-3">
-                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Vision:</span>
-                        <span className="text-sm text-gray-600 font-bold">
-                          {planData.vision || "No vision statement"}
-                        </span>
-                      </div>
-
-                      {/* Mission Preview */}
-                      <div className="flex items-start gap-3">
-                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Mission:</span>
-                        <span className="text-sm text-gray-600 font-bold">
-                          {planData.mission || "No mission statement"}
-                        </span>
-                      </div>
-
-                      {/* Team Members Preview */}
-                      <div className="flex items-start gap-3">
-                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Team:</span>
-                        <div className="flex flex-wrap gap-1">
-                          {planData.teamMembers.length > 0 ? (
-                            planData.teamMembers.filter(Boolean).map((member, i) => (
-                              <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                👤 {member}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-gray-500">No team members</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">✏️ Edit Plan Details</h3>
-                      <button
-                        onClick={() => setShowCoreEditor(false)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                      >
-                        ✅ Done
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
-                        <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
-                          📷 Choose Logo File
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-20 h-auto rounded" />}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
-                        <textarea
-                          value={planData.vision}
-                          onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                          placeholder="Our vision..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
-                        <textarea
-                          value={planData.mission}
-                          onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                          placeholder="Our mission..."
-                        />
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">👥 Team Members</label>
-                      <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
-                        {planData.teamMembers.map((member, i) => (
-                          <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
-                            <input
-                              type="text"
-                              value={member}
-                              onChange={e => updateTeamMember(i, e.target.value)}
-                              className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
-                              placeholder="Name"
-                            />
-                            <button
-                              onClick={() => removeTeamMember(i)}
-                              className="text-red-500 hover:text-red-700 text-xs ml-1"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={addTeamMember}
-                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
-                        >
-                          + Add Member
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            
           </div>
 
         {mode === 'progress' ? (
