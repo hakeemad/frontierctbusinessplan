@@ -296,7 +296,13 @@ export default function Page() {
           row[header] = values[index] || '';
         });
 
-        const goalName = row["Title"] || row["title"] || row["Goal Name"] || row["goal name"] || `Goal ${i}`;
+        // Use Goal Name column as primary grouping key with proper trimming
+        const goalName = row["Goal Name"]?.trim() || '';
+        
+        // Skip rows with blank goal names
+        if (!goalName) {
+          continue;
+        }
 
         if (!goalMap[goalName]) {
           goalMap[goalName] = {
