@@ -31,15 +31,13 @@ export async function GET() {
           if (goal.actions && Array.isArray(goal.actions) && typeof goal.actions[0] === 'string') {
             goal.actions = goal.actions.map((text: string) => ({ text, archived: false, status: 'Not Started', notes: '' }))
           }
-          // Ensure new fields exist on existing measures/actions
+          // Ensure proper structure for measures and actions
           if (goal.measures && Array.isArray(goal.measures)) {
             goal.measures = goal.measures.map((m: any) => ({
               text: m.text || '',
               dueDate: m.dueDate || undefined,
               assignee: m.assignee || undefined,
-              archived: Boolean(m.archived),
-              status: m.status || 'Not Started',
-              notes: m.notes || ''
+              archived: Boolean(m.archived)
             }))
           }
           if (goal.actions && Array.isArray(goal.actions)) {
@@ -132,9 +130,7 @@ export async function POST(request: NextRequest) {
             text: m.text || '',
             dueDate: m.dueDate || undefined,
             assignee: m.assignee || undefined,
-            archived: Boolean(m.archived),
-            status: m.status || 'Not Started',
-            notes: m.notes || ''
+            archived: Boolean(m.archived)
           })) : []
 
           goal.actions = Array.isArray(goal.actions) ? goal.actions.map((a: any) => ({
