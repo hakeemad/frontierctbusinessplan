@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,15 +7,20 @@ interface MeasureAction {
   dueDate?: string;
   assignee?: string;
   archived: boolean;
-  status?: string;
-  notes?: string;
 }
 
 interface Goal {
   name: string;
   strategies: string[];
   measures: MeasureAction[];
-  actions: MeasureAction[];
+  actions: {
+    text: string;
+    dueDate?: string;
+    assignee?: string;
+    archived: boolean;
+    status?: string;
+    notes?: string;
+  }[];
   owner: string;
 }
 
@@ -280,52 +284,58 @@ export default function Page() {
         h.toLowerCase().includes('actions')
       );
 
-      const newGoals: Goal[] = [];
+      // GROUP rows by goal name to collect all related items before creating the Goal object
+      const goalMap: Record<string, Goal> = {};
 
-      if (hasHeaderFormat) {
-        // Use header-based parsing
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          if (values.length < 1 || !values[0]) continue;
+      for (let i = 0; i < lines.length; i++) {
+        if (i === 0) continue; // Skip the header line
 
-          // Create row object mapping headers to values
-          const row: { [key: string]: string } = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index] || '';
-          });
+        const values = lines[i].split(',').map(v => v.trim());
+        const row: { [key: string]: string } = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
 
-          const goal: Goal = {
-            name: row["Title"] || row["title"] || row["Goal Name"] || row["goal name"] || `Goal ${i}`,
-            measures: row["Measures"]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
-            strategies: row["Strategy"]?.split(";").map(s => s.trim()).filter(Boolean).map(text => ({ text })) ?? [],
-            actions: row["Actions"]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
+        const goalName = row["Title"] || row["title"] || row["Goal Name"] || row["goal name"] || `Goal ${i}`;
+
+        if (!goalMap[goalName]) {
+          goalMap[goalName] = {
+            name: goalName,
+            measures: [],
+            strategies: [],
+            actions: [],
             owner: ''
           };
-
-          console.log("Parsed goal:", goal); 
-          newGoals.push(goal);
         }
-      } else {
-        // Fall back to index-based parsing
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          if (values.length < 1 || !values[0]) continue;
 
-          const goal: Goal = {
-            name: values[0] || `Goal ${i}`,
-            measures: values[1]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
-            strategies: values[2]?.split(";").map(s => s.trim()).filter(Boolean) ?? [],
-            actions: values[3]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
-            owner: ''
-          };
+        if (row["Measures"]) {
+          const newMeasures = row["Measures"].split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false }));
+          goalMap[goalName].measures.push(...newMeasures);
+        }
 
-          newGoals.push(goal);
+        if (row["Strategy"]) {
+          const newStrategies = row["Strategy"].split(";").map(s => s.trim()).filter(Boolean).map(text => ({ text }));
+          goalMap[goalName].strategies.push(...newStrategies);
+        }
+
+        if (row["Actions"]) {
+          const newActions = row["Actions"].split(";").map(a => a.trim()).filter(Boolean).map(text => ({
+            text,
+            archived: false,
+            status: 'not_started',
+            notes: ''
+          }));
+          goalMap[goalName].actions.push(...newActions);
         }
       }
 
+      // Deduplicate text entries if needed
+      const newGoals = Object.values(goalMap);
+      console.log("Parsed goals:", newGoals);
+
       if (newGoals.length > 0) {
-        setPlanData(prev => ({ 
-          ...prev, 
+        setPlanData(prev => ({
+          ...prev,
           goals: newGoals,  // Replace all goals instead of appending
         }));
         setStatus(`✅ Replaced entire plan with ${newGoals.length} goals from CSV`);
@@ -490,7 +500,7 @@ export default function Page() {
   const progressSummary = getProgressSummary();
 
   const getProgressItems = () => {
-    const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: MeasureAction, goalName: string }> } = {};
+    const items: { [memberName: string]: Array<{ type: 'action' | 'measure', item: any, goalName: string }> } = {};
 
     planData.teamMembers.forEach(member => {
       if (member.trim()) {
@@ -515,14 +525,14 @@ export default function Page() {
     return items;
   };
 
-  const getStatusIcon = (item: MeasureAction) => {
+  const getStatusIcon = (item: any) => {
     if (item.archived) return '✅';
     if (isOverdue(item.dueDate)) return '⚠️';
     if (isDueThisWeek(item.dueDate)) return '⏳';
     return '📋';
   };
 
-  const getStatusColor = (item: MeasureAction) => {
+  const getStatusColor = (item: any) => {
     if (item.archived) return 'text-green-600 bg-green-50';
     if (isOverdue(item.dueDate)) return 'text-red-600 bg-red-50';
     if (isDueThisWeek(item.dueDate)) return 'text-yellow-600 bg-yellow-50';
@@ -551,7 +561,7 @@ export default function Page() {
   };
 
   // Filter functions
-  const filterMeasureAction = (item: MeasureAction) => {
+  const filterMeasureAction = (item: any) => {
     // Assignee filter
     if (filters.assignee && item.assignee !== filters.assignee) {
       return false;
@@ -747,7 +757,7 @@ export default function Page() {
                     ✏️ Edit Details
                   </button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {/* Logo Preview */}
                   <div className="flex items-center gap-3">
@@ -1074,7 +1084,7 @@ export default function Page() {
 
             {status && <p className="text-sm mb-4 px-3 py-2 bg-blue-50 text-blue-700 rounded">{status}</p>}
 
-            
+
           </div>
 
         {mode === 'progress' ? (
