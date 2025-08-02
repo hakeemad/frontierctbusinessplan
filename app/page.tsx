@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -501,7 +500,7 @@ export default function Page() {
   const getProgressStatusBadge = (status: string) => {
     const option = progressOptions.find(opt => opt.value === status);
     const label = option?.label || 'Not Started';
-    
+
     switch (status) {
       case 'completed':
         return 'bg-green-100 text-green-800';
@@ -557,6 +556,40 @@ export default function Page() {
   };
 
   const filteredGoals = getFilteredGoals();
+
+   const deleteAllOlderVersions = async () => {
+    try {
+      setStatus('Deleting older versions...');
+
+      // Delete all versions except the latest
+      const latestVersionId = versions[0]?.id;
+      const deletePromises = versions.slice(1).map(async (version) => {
+        const response = await fetch(`/api/versions?id=${version.id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          console.error(`Failed to delete version ${version.id}`);
+        }
+        return response.ok;
+      });
+
+      const results = await Promise.all(deletePromises);
+      const allDeleted = results.every(result => result);
+
+      if (allDeleted) {
+        // Refresh versions list
+        loadVersions();
+        setStatus('Older versions deleted ✅');
+      } else {
+        setStatus('Failed to delete all older versions ❌');
+      }
+    } catch (error) {
+      console.error('Error deleting older versions:', error);
+      setStatus('Failed to delete older versions ❌');
+    } finally {
+      setTimeout(() => setStatus(''), 3000);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-4 overflow-x-hidden">
@@ -803,10 +836,24 @@ export default function Page() {
             {/* Version History Modal */}
             {showVersions && (
               <div className="mb-6 bg-gray-50 rounded-lg p-4 border">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">🕐 Version History ({versions.length})</h3>
-                  <span className="text-sm text-gray-500">Auto-saved on plan changes</span>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">🕐 Version History ({versions.length})</h3>
+              <div className="flex items-center gap-3">
+                {versions.length > 1 && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete all ${versions.length - 1} older versions? This cannot be undone.`)) {
+                        deleteAllOlderVersions();
+                      }
+                    }}
+                    className="px-2 py-1 text-red-600 hover:text-red-800 text-xs"
+                  >
+                    🗑️ Delete All Older
+                  </button>
+                )}
+                <span className="text-sm text-gray-500">Auto-saved on plan changes</span>
+              </div>
+            </div>
                 {versions.length === 0 ? (
                   <p className="text-gray-500">No versions saved yet. Versions are created automatically when you save the plan.</p>
                 ) : (

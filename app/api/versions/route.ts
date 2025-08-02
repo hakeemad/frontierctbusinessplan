@@ -161,3 +161,92 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('DELETE /api/versions - Deleting version(s)...')
+    const requestData = await request.json()
+
+    // Get current version list
+    const versionListRaw = await db.get(VERSION_LIST_KEY)
+    let versionIds: string[] = []
+    
+    if (versionListRaw) {
+      if (typeof versionListRaw === 'string') {
+        versionIds = JSON.parse(versionListRaw)
+      } else if (versionListRaw.ok && versionListRaw.value) {
+        versionIds = typeof versionListRaw.value === 'string' ? JSON.parse(versionListRaw.value) : versionListRaw.value
+      } else {
+        versionIds = Array.isArray(versionListRaw) ? versionListRaw : []
+      }
+    }
+
+    if (requestData.deleteAll && requestData.keepLatest) {
+      // Delete all versions except the latest (first in array)
+      const versionsToDelete = versionIds.slice(1)
+      let deletedCount = 0
+
+      for (const versionId of versionsToDelete) {
+        try {
+          const versionKey = `plan_version_${versionId}`
+          await db.delete(versionKey)
+          console.log(`Deleted version: ${versionId}`)
+          deletedCount++
+        } catch (error) {
+          console.error(`Error deleting version ${versionId}:`, error)
+        }
+      }
+
+      // Update version list to keep only the latest
+      const updatedVersionIds = versionIds.slice(0, 1)
+      await db.set(VERSION_LIST_KEY, JSON.stringify(updatedVersionIds))
+
+      return NextResponse.json({ 
+        success: true, 
+        deletedCount,
+        message: `Deleted ${deletedCount} older versions` 
+      })
+    } else if (requestData.versionId) {
+      // Delete specific version
+      const versionId = requestData.versionId
+
+      // Don't allow deletion of the latest version
+      if (versionIds.length > 0 && versionIds[0] === versionId) {
+        return NextResponse.json({ 
+          error: 'Cannot delete the latest version' 
+        }, { status: 400 })
+      }
+
+      try {
+        const versionKey = `plan_version_${versionId}`
+        await db.delete(versionKey)
+        console.log(`Deleted version: ${versionId}`)
+
+        // Remove from version list
+        const updatedVersionIds = versionIds.filter(id => id !== versionId)
+        await db.set(VERSION_LIST_KEY, JSON.stringify(updatedVersionIds))
+
+        return NextResponse.json({ 
+          success: true,
+          message: `Deleted version ${versionId}` 
+        })
+      } catch (error) {
+        console.error(`Error deleting version ${versionId}:`, error)
+        return NextResponse.json({ 
+          error: 'Failed to delete version', 
+          details: error instanceof Error ? error.message : String(error) 
+        }, { status: 500 })
+      }
+    } else {
+      return NextResponse.json({ 
+        error: 'Invalid delete request - missing versionId or deleteAll flag' 
+      }, { status: 400 })
+    }
+  } catch (error) {
+    console.error('DELETE /api/versions - Error:', error)
+    return NextResponse.json({ 
+      error: 'Failed to delete version(s)', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 })
+  }
+}
