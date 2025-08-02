@@ -314,7 +314,7 @@ export default function Page() {
         }
 
         if (row["Strategy"]) {
-          const newStrategies = row["Strategy"].split(";").map(s => s.trim()).filter(Boolean).map(text => ({ text }));
+          const newStrategies = row["Strategy"].split(";").map(s => s.trim()).filter(Boolean);
           goalMap[goalName].strategies.push(...newStrategies);
         }
 
@@ -329,8 +329,17 @@ export default function Page() {
         }
       }
 
-      // Deduplicate text entries if needed
-      const newGoals = Object.values(goalMap);
+      // Deduplicate entries within each goal
+      const newGoals = Object.values(goalMap).map(goal => ({
+        ...goal,
+        strategies: [...new Set(goal.strategies)], // Remove duplicate strategies
+        measures: goal.measures.filter((measure, index, self) => 
+          index === self.findIndex(m => m.text === measure.text)
+        ), // Remove duplicate measures by text
+        actions: goal.actions.filter((action, index, self) => 
+          index === self.findIndex(a => a.text === action.text)
+        ) // Remove duplicate actions by text
+      }));
       console.log("Parsed goals:", newGoals);
 
       if (newGoals.length > 0) {
