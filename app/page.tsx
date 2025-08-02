@@ -869,17 +869,51 @@ export default function Page() {
                           </div>
                           <div className="text-xs text-gray-500">{new Date(version.timestamp).toLocaleString()}</div>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to restore the version from ${new Date(version.timestamp).toLocaleString()}? This will replace your current plan.`)) {
-                              restoreVersion(version);
-                            }
-                          }}
-                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400"
-                          disabled={index === 0}
-                        >
-                          {index === 0 ? 'Current' : 'Restore'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {index !== 0 && (
+                            <button
+                              onClick={async () => {
+                                if (confirm("Are you sure you want to delete this version? This cannot be undone.")) {
+                                  try {
+                                    setStatus('Deleting version...');
+                                    const response = await fetch('/api/versions', {
+                                      method: 'DELETE',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ versionId: version.id }),
+                                    });
+
+                                    if (response.ok) {
+                                      // Refresh versions list
+                                      loadVersions();
+                                      setStatus('Version deleted ✅');
+                                      setTimeout(() => setStatus(''), 2000);
+                                    } else {
+                                      setStatus('Failed to delete version ❌');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error deleting version:', error);
+                                    setStatus('Failed to delete version ❌');
+                                  }
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                              title="Delete this version"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to restore the version from ${new Date(version.timestamp).toLocaleString()}? This will replace your current plan.`)) {
+                                restoreVersion(version);
+                              }
+                            }}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400"
+                            disabled={index === 0}
+                          >
+                            {index === 0 ? 'Current' : 'Restore'}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
