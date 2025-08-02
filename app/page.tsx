@@ -297,11 +297,12 @@ export default function Page() {
           const goal: Goal = {
             name: row["Title"] || row["title"] || row["Goal Name"] || row["goal name"] || `Goal ${i}`,
             measures: row["Measures"]?.split(";").map(m => m.trim()).filter(Boolean).map(text => ({ text, archived: false })) ?? [],
-            strategies: row["Strategy"]?.split(";").map(s => s.trim()).filter(Boolean) ?? [],
+            strategies: row["Strategy"]?.split(";").map(s => s.trim()).filter(Boolean).map(text => ({ text })) ?? [],
             actions: row["Actions"]?.split(";").map(a => a.trim()).filter(Boolean).map(text => ({ text, archived: false, status: 'not_started', notes: '' })) ?? [],
             owner: ''
           };
 
+          console.log("Parsed goal:", goal); 
           newGoals.push(goal);
         }
       } else {
