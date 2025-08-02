@@ -61,6 +61,7 @@ export default function Page() {
     status: 'all', // 'all', 'archived', 'active'
     dueStatus: 'all' // 'all', 'overdue', 'due_soon', 'no_due_date'
   });
+  const [showCoreEditor, setShowCoreEditor] = useState(false);
 
   useEffect(() => {
     // Check if user is admin - using hardcoded email as requested
@@ -926,70 +927,140 @@ export default function Page() {
 
             {mode === 'edit' && (
               <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-16">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
-                    <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
-                      📷 Choose Logo File
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-20 h-auto rounded" />}
-                  </div>
+                {!showCoreEditor ? (
+                  <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">📋 Plan Overview</h3>
+                      <button
+                        onClick={() => setShowCoreEditor(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                      >
+                        ✏️ Edit Details
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {/* Logo Preview */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700 w-20">Logo:</span>
+                        {planData.logoUrl ? (
+                          <img src={planData.logoUrl} alt="Logo" className="w-12 h-12 rounded object-cover" />
+                        ) : (
+                          <span className="text-sm text-gray-500">No logo uploaded</span>
+                        )}
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
-                    <textarea
-                      value={planData.vision}
-                      onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="Our vision..."
-                    />
-                  </div>
+                      {/* Vision Preview */}
+                      <div className="flex items-start gap-3">
+                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Vision:</span>
+                        <span className="text-sm text-gray-600 font-bold">
+                          {planData.vision || "No vision statement"}
+                        </span>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
-                    <textarea
-                      value={planData.mission}
-                      onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
-                      placeholder="Our mission..."
-                    />
-                  </div>
-                </div>
+                      {/* Mission Preview */}
+                      <div className="flex items-start gap-3">
+                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Mission:</span>
+                        <span className="text-sm text-gray-600 font-bold">
+                          {planData.mission || "No mission statement"}
+                        </span>
+                      </div>
 
-                <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">👥 Team Members</label>
-                  <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
-                    {planData.teamMembers.map((member, i) => (
-                      <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
-                        <input
-                          type="text"
-                          value={member}
-                          onChange={e => updateTeamMember(i, e.target.value)}
-                          className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
-                          placeholder="Name"
+                      {/* Team Members Preview */}
+                      <div className="flex items-start gap-3">
+                        <span className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Team:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {planData.teamMembers.length > 0 ? (
+                            planData.teamMembers.filter(Boolean).map((member, i) => (
+                              <span key={i} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                👤 {member}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-500">No team members</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-800">✏️ Edit Plan Details</h3>
+                      <button
+                        onClick={() => setShowCoreEditor(false)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      >
+                        ✅ Done
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Logo Upload</label>
+                        <label className="w-full border border-gray-300 rounded-lg px-3 py-2 cursor-pointer bg-white hover:bg-gray-50 flex items-center justify-center">
+                          📷 Choose Logo File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        {planData.logoUrl && <img src={planData.logoUrl} alt="Logo" className="mt-2 max-w-20 h-auto rounded" />}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Vision Statement</label>
+                        <textarea
+                          value={planData.vision}
+                          onChange={e => setPlanData(prev => ({ ...prev, vision: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                          placeholder="Our vision..."
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Mission Statement</label>
+                        <textarea
+                          value={planData.mission}
+                          onChange={e => setPlanData(prev => ({ ...prev, mission: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 h-20"
+                          placeholder="Our mission..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">👥 Team Members</label>
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
+                        {planData.teamMembers.map((member, i) => (
+                          <div key={i} className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 py-1">
+                            <input
+                              type="text"
+                              value={member}
+                              onChange={e => updateTeamMember(i, e.target.value)}
+                              className="text-sm bg-transparent border-none outline-none min-w-0 flex-1"
+                              placeholder="Name"
+                            />
+                            <button
+                              onClick={() => removeTeamMember(i)}
+                              className="text-red-500 hover:text-red-700 text-xs ml-1"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
                         <button
-                          onClick={() => removeTeamMember(i)}
-                          className="text-red-500 hover:text-red-700 text-xs ml-1"
+                          onClick={addTeamMember}
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
                         >
-                          ✕
+                          + Add Member
                         </button>
                       </div>
-                    ))}
-                    <button
-                      onClick={addTeamMember}
-                      className="bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg px-3 py-1 text-sm"
-                    >
-                      + Add Member
-                    </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
