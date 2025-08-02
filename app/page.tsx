@@ -633,14 +633,14 @@ export default function Page() {
                   <div className="text-sm text-gray-600 space-y-2">
                     {planData.vision && (
                       <p className="bg-blue-50 p-3 rounded-lg">
-                        <span className="font-medium text-blue-800">Vision:</span> 
-                        <span className="ml-2">{planData.vision}</span>
+                        <span className="font-bold text-blue-800">Vision:</span> 
+                        <span className="ml-2 font-bold">{planData.vision}</span>
                       </p>
                     )}
                     {planData.mission && (
                       <p className="bg-green-50 p-3 rounded-lg">
-                        <span className="font-medium text-green-800">Mission:</span> 
-                        <span className="ml-2">{planData.mission}</span>
+                        <span className="font-bold text-green-800">Mission:</span> 
+                        <span className="ml-2 font-bold">{planData.mission}</span>
                       </p>
                     )}
                   </div>
@@ -716,8 +716,8 @@ export default function Page() {
                 {/* Vision and Mission as subtle subtitles */}
                 {(planData.vision || planData.mission) && (
                   <div className="mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600 space-y-1">
-                    {planData.vision && <p className="break-words"><span className="font-medium">Vision:</span> {planData.vision}</p>}
-                    {planData.mission && <p className="break-words"><span className="font-medium">Mission:</span> {planData.mission}</p>}
+                    {planData.vision && <p className="break-words"><span className="font-bold">Vision:</span> <span className="font-bold">{planData.vision}</span></p>}
+                    {planData.mission && <p className="break-words"><span className="font-bold">Mission:</span> <span className="font-bold">{planData.mission}</span></p>}
                   </div>
                 )}
             </div>
@@ -1370,7 +1370,7 @@ export default function Page() {
 
               <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">📊 Measures</h4>
+                  <h4 className="text-sm sm:text-base font-bold text-gray-700 mb-1 sm:mb-2 border-b border-gray-200 pb-1">📊 Measures</h4>
                   <div className="space-y-1 sm:space-y-2">
                     {goal.measures.map((measure, i) => (
                       <div key={i} className="flex items-start gap-1 sm:gap-2">
@@ -1433,7 +1433,7 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">🎯 Strategies</h4>
+                  <h4 className="text-sm sm:text-base font-bold text-gray-700 mb-1 sm:mb-2 border-b border-gray-200 pb-1">🎯 Strategies</h4>
                   {mode === 'edit' ? (
                     <div className="space-y-1 sm:space-y-2">
                       {Array.isArray(planData.goals[goalIndex].strategies) && planData.goals[goalIndex].strategies.map((strategy, i) => (
@@ -1461,7 +1461,7 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <h4 className="text-sm sm:text-base font-medium text-gray-700 mb-1 sm:mb-2">⚡ Actions</h4>
+                  <h4 className="text-sm sm:text-base font-bold text-gray-700 mb-1 sm:mb-2 border-b border-gray-200 pb-1">⚡ Actions</h4>
                   <div className="space-y-1 sm:space-y-2">
                     {goal.actions.map((action, i) => (
                       <div key={i} className="flex items-start gap-1 sm:gap-2">
