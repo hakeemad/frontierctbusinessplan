@@ -278,11 +278,55 @@ export default function Page() {
         const values = lines[i].split(',').map(v => v.trim());
         if (values.length < 1 || !values[0]) continue;
 
+        // Parse strategies - split by semicolon, trim, and filter out empty entries
+        const strategies: string[] = [];
+        if (values[1]) {
+          const strategiesRaw = values[1].split(';');
+          strategiesRaw.forEach(strategy => {
+            const trimmed = strategy.trim();
+            if (trimmed) {
+              strategies.push(trimmed);
+            }
+          });
+        }
+
+        // Parse measures - split by semicolon, trim, and create measure objects
+        const measures: MeasureAction[] = [];
+        if (values[2]) {
+          const measuresRaw = values[2].split(';');
+          measuresRaw.forEach(measure => {
+            const trimmed = measure.trim();
+            if (trimmed) {
+              measures.push({
+                text: trimmed,
+                archived: false
+              });
+            }
+          });
+        }
+
+        // Parse actions - split by semicolon, trim, and create action objects
+        const actions: MeasureAction[] = [];
+        if (values[3]) {
+          const actionsRaw = values[3].split(';');
+          actionsRaw.forEach(action => {
+            const trimmed = action.trim();
+            if (trimmed) {
+              actions.push({
+                text: trimmed,
+                archived: false,
+                status: 'not_started',
+                notes: ''
+              });
+            }
+          });
+        }
+
         const goal: Goal = {
           name: values[0] || `Goal ${i}`,
-          strategies: values[1] ? values[1].split(';').map(s => s.trim()).filter(Boolean) : [],
-          measures: values[2] ? values[2].split(';').map(m => ({ text: m.trim(), archived: false })).filter(m => m.text) : [],
-          actions: values[3] ? values[3].split(';').map(a => ({ text: a.trim(), archived: false, status: 'not_started', notes: '' })).filter(a => a.text) : [],
+          strategies: strategies,
+          measures: measures,
+          actions: actions,
           owner: values[4] ? values[4].trim() : ''
         };
 
