@@ -1,5 +1,5 @@
 {
-  "/api/versions/route": "app/api/versions/route.js",
   "/api/plan/route": "app/api/plan/route.js",
+  "/api/versions/route": "app/api/versions/route.js",
   "/page": "app/page.js"
 }
