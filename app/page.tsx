@@ -326,6 +326,9 @@ export default function Page() {
           goalMap[goalName].measures.push(...newMeasures);
         }
 
+        // Debug: Check what's in the Strategies column
+        console.log("Strategies column:", row["Strategies"]);
+        
         // Parse Strategies field (updated to match Measures/Actions pattern)
         if (row["Strategy"] && row["Strategy"].toLowerCase() !== 'nan' && row["Strategy"].trim() !== '') {
           const strategiesText = row["Strategy"].trim();
@@ -335,11 +338,13 @@ export default function Page() {
           goalMap[goalName].strategies.push(...newStrategies);
         }
 
-        // Also check for "Strategies" field (plural form)
+        // Also check for "Strategies" field (plural form) - case-sensitive
         if (row["Strategies"] && row["Strategies"].toLowerCase() !== 'nan' && row["Strategies"].trim() !== '') {
           const strategiesText = row["Strategies"].trim();
           console.log(`Processing strategies (plural) for "${goalName}":`, strategiesText);
-          const newStrategies = strategiesText.split(',').map(s => s.trim()).filter(Boolean);
+          // Use semicolon separator as requested, with comma as fallback
+          const separator = strategiesText.includes(';') ? ';' : ',';
+          const newStrategies = strategiesText.split(separator).map(s => s.trim()).filter(Boolean);
           console.log(`Added ${newStrategies.length} strategies from plural field:`, newStrategies);
           goalMap[goalName].strategies.push(...newStrategies);
         }
@@ -374,16 +379,23 @@ export default function Page() {
       }
 
       // Deduplicate entries within each goal
-      const newGoals = Object.values(goalMap).map(goal => ({
-        ...goal,
-        strategies: [...new Set(goal.strategies)], // Remove duplicate strategies
-        measures: goal.measures.filter((measure, index, self) => 
-          index === self.findIndex(m => m.text === measure.text)
-        ), // Remove duplicate measures by text
-        actions: goal.actions.filter((action, index, self) => 
-          index === self.findIndex(a => a.text === action.text)
-        ) // Remove duplicate actions by text
-      }));
+      const newGoals = Object.values(goalMap).map(goal => {
+        const processedGoal = {
+          ...goal,
+          strategies: [...new Set(goal.strategies)], // Remove duplicate strategies
+          measures: goal.measures.filter((measure, index, self) => 
+            index === self.findIndex(m => m.text === measure.text)
+          ), // Remove duplicate measures by text
+          actions: goal.actions.filter((action, index, self) => 
+            index === self.findIndex(a => a.text === action.text)
+          ) // Remove duplicate actions by text
+        };
+        
+        // Debug: Log each imported goal and its strategies
+        console.log("Imported goal:", processedGoal.name, "Strategies:", processedGoal.strategies);
+        
+        return processedGoal;
+      });
       console.log("Parsed goals:", newGoals);
 
       if (newGoals.length > 0) {
