@@ -683,67 +683,7 @@ export default function Page() {
     }
   };
 
-  const handleCSVExport = () => {
-    try {
-      setStatus('Exporting CSV...');
-      const csvRows = [];
-
-      // CSV Header
-      csvRows.push('Goal Name,Strategy,Measure,Action');
-
-      // For each goal...
-      planData.goals.forEach(goal => {
-        const goalName = goal.name;
-
-        // Add strategies
-        goal.strategies.forEach(strategy => {
-          csvRows.push(`"${goalName}","${strategy}","",""`);
-        });
-
-        // Add measures
-        goal.measures.forEach(measure => {
-          csvRows.push(`"${goalName}","","${measure.text}",""`);
-        });
-
-        // Add actions
-        goal.actions.forEach(action => {
-          csvRows.push(`"${goalName}","","","${action.text}"`);
-        });
-
-        // If there are no strategies, measures, or actions, add a row with just the goal name
-        if (goal.strategies.length === 0 && goal.measures.length === 0 && goal.actions.length === 0) {
-          csvRows.push(`"${goalName}","","",""`);
-        }
-      });
-
-      // Create the CSV content
-      const csvContent = csvRows.join('\n');
-
-      // Create a Blob and a URL for the file
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-
-      // Create a link to download the file
-      const a = document.createElement('a');
-      a.setAttribute('href', url);
-      a.setAttribute('download', 'plan_export.csv');
-      document.body.appendChild(a); // Required for Firefox
-
-      // Trigger the download
-      a.click();
-
-      // Clean up
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setStatus('CSV exported successfully! ✅');
-      setTimeout(() => setStatus(''), 3000);
-
-    } catch (error) {
-      console.error('CSV export error:', error);
-      setStatus('CSV export failed ❌');
-    }
-  };
+  // handleCSVExport function removed - can be re-enabled later if needed
 
 
   return (
@@ -844,12 +784,7 @@ export default function Page() {
                       <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                     </label>
 
-                    <button
-                      onClick={handleCSVExport}
-                      className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    >
-                      📥 Export CSV
-                    </button>
+                    {/* Export CSV button removed - can be re-enabled later if needed */}
                   </>
                 )}
 
@@ -1086,12 +1021,7 @@ export default function Page() {
                     <input type="file" accept=".csv" onChange={handleCSVUpload} className="hidden" />
                   </label>
 
-                  <button
-                    onClick={handleCSVExport}
-                    className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                  >
-                    📥 Export CSV
-                  </button>
+                  {/* Export CSV button removed - can be re-enabled later if needed */}
                 </>
               )}
                 </>
