@@ -41,6 +41,8 @@ interface PlanVersion {
 const progressOptions = [
   { value: 'not_started', label: 'Not Started' },
   { value: 'in_progress', label: 'In Progress' },
+  { value: 'on_track', label: 'On Track' },
+  { value: 'off_track', label: 'Off Track' },
   { value: 'blocked', label: 'Blocked' },
   { value: 'completed', label: 'Completed' }
 ];
@@ -63,7 +65,8 @@ export default function Page() {
   const [filters, setFilters] = useState({
     assignee: '',
     status: 'all', // 'all', 'archived', 'active'
-    dueStatus: 'all' // 'all', 'overdue', 'due_soon', 'no_due_date'
+    dueStatus: 'all', // 'all', 'overdue', 'due_soon', 'no_due_date'
+    trackStatus: 'all' // 'all', 'on_track', 'off_track'
   });
   const [showCoreEditor, setShowCoreEditor] = useState(false);
 
@@ -598,6 +601,10 @@ export default function Page() {
         return 'bg-green-100 text-green-800';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800';
+      case 'on_track':
+        return 'bg-green-100 text-green-800';
+      case 'off_track':
+        return 'bg-red-100 text-red-800';
       case 'blocked':
         return 'bg-red-100 text-red-800';
       default:
@@ -634,6 +641,20 @@ export default function Page() {
     }
     if (filters.dueStatus === 'no_due_date' && item.dueDate) {
       return false;
+    }
+
+    // Track status filter (only applies to actions with status field)
+    if (filters.trackStatus !== 'all' && item.status) {
+      if (filters.trackStatus === 'on_track') {
+        if (!['on_track', 'in_progress', 'completed'].includes(item.status)) {
+          return false;
+        }
+      }
+      if (filters.trackStatus === 'off_track') {
+        if (item.status !== 'off_track') {
+          return false;
+        }
+      }
     }
 
     return true;
@@ -1432,9 +1453,23 @@ export default function Page() {
                   </select>
                 </div>
 
+                {/* Track Status Filter */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Track Status:</label>
+                  <select
+                    value={filters.trackStatus}
+                    onChange={e => setFilters(prev => ({ ...prev, trackStatus: e.target.value }))}
+                    className="text-xs border border-gray-200 rounded px-2 py-1"
+                  >
+                    <option value="all">All</option>
+                    <option value="on_track">On Track</option>
+                    <option value="off_track">Off Track</option>
+                  </select>
+                </div>
+
                 {/* Clear Filters */}
                 <button
-                  onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all' })}
+                  onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all', trackStatus: 'all' })}
                   className="text-xs text-blue-600 hover:text-blue-800"
                 >
                   Clear All
@@ -1673,9 +1708,12 @@ export default function Page() {
                           </div>
                         ) : (
                           <div className="flex-1 min-w-0 relative group">
-                            <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
-                              {action.text}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              {action.status === 'off_track' && <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" title="Off Track"></span>}
+                              <span className={`text-xs sm:text-sm ${action.archived ? 'line-through text-gray-400' : 'text-gray-700'} break-words`}>
+                                {action.text}
+                              </span>
+                            </div>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {action.dueDate && <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap">⏰ {action.dueDate}</span>}
                               {action.assignee && <span className="text-xs bg-blue-100 text-blue-800 px-1 rounded break-all">👤 {action.assignee}</span>}
@@ -1721,11 +1759,11 @@ export default function Page() {
 
               {/* Show message if no goals match filters */}
               {filteredGoals.every(goal => goal.measures.length === 0 && goal.actions.length === 0) && 
-               (filters.assignee || filters.status !== 'all' || filters.dueStatus !== 'all') && (
+               (filters.assignee || filters.status !== 'all' || filters.dueStatus !== 'all' || filters.trackStatus !== 'all') && (
                 <div className="col-span-full text-center py-8 text-gray-500">
                   <p>No items match the current filters.</p>
                   <button
-                    onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all' })}
+                    onClick={() => setFilters({ assignee: '', status: 'all', dueStatus: 'all', trackStatus: 'all' })}
                     className="text-blue-600 hover:text-blue-800 text-sm mt-2"
                   >
                     Clear filters to see all items
